@@ -80,11 +80,18 @@ npm run dev
 
 ##  Screenshots
 
+### 1. Login Page
+
 <img width="1904" height="861" alt="image" src="https://github.com/user-attachments/assets/32fbf44c-af29-484c-9d94-60e0e058541f" />
+
+### 2. Chat Interface
 
 <img width="1904" height="857" alt="image" src="https://github.com/user-attachments/assets/c123ad9a-32c9-43b2-a9d4-e487a4177201" />
 
+### 3. Chat Example
+
 <img width="1900" height="862" alt="image" src="https://github.com/user-attachments/assets/5fa43a55-6170-4400-bf8d-99f2a4994c99" />
+
 
 
 
