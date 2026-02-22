@@ -14,6 +14,9 @@ from agents.sub_agents import (
     market_strategist_agent,
     investor_outreacher_agent,
     knowledge_base_agent,
+    figma_mcp_agent,
+    brave_search_mcp_agent,
+    drawio_mcp_agent,
 )
 from core.config import config
 
@@ -29,6 +32,9 @@ pitchmate_agent = Agent(
         AgentTool(agent=market_strategist_agent, skip_summarization=False),
         AgentTool(agent=investor_outreacher_agent, skip_summarization=False),
         AgentTool(agent=knowledge_base_agent, skip_summarization=False),
+        AgentTool(agent=figma_mcp_agent, skip_summarization=False),
+        AgentTool(agent=brave_search_mcp_agent, skip_summarization=False),
+        AgentTool(agent=drawio_mcp_agent, skip_summarization=False),
     ],
     generate_content_config=genai_types.GenerateContentConfig(
         temperature=0.3,
@@ -39,3 +45,4 @@ pitchmate_agent = Agent(
         ),
     ),
 )
+

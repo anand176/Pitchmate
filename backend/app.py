@@ -43,10 +43,12 @@ app.add_middleware(
 # ---------------------------------------------------------------------------
 from auth.router import router as auth_router                    # noqa: E402
 from agents.backend import router as agents_router              # noqa: E402
+from agents.context_router import router as context_router      # noqa: E402
 from knowledge_base.router import router as kb_router           # noqa: E402
 
 app.include_router(auth_router)
 app.include_router(agents_router)
+app.include_router(context_router)
 app.include_router(kb_router)
 
 

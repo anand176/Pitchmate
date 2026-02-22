@@ -8,6 +8,7 @@ from pydantic import BaseModel
 import logging
 
 from auth.dependencies import get_current_user
+from agents.session_context import get_session_context
 
 logger = logging.getLogger("agents_backend")
 logger.setLevel(logging.INFO)
@@ -26,6 +27,18 @@ class PitchmateResponse(BaseModel):
     session_id: str
 
 
+def _build_enriched_query(query: str, startup_context: str) -> str:
+    """Prepend the saved startup context to the user query if available."""
+    if not startup_context:
+        return query
+    return (
+        "## Your Startup Context\n"
+        f"{startup_context}\n\n"
+        "---\n"
+        f"## User Question\n{query}"
+    )
+
+
 @router.post("/pitchmate", response_model=PitchmateResponse)
 async def pitchmate(
     req: PitchmateRequest,
@@ -33,11 +46,16 @@ async def pitchmate(
 ):
     """
     Main Pitchmate agent endpoint.
-    Accepts a natural language query and streams it through the orchestrator agent.
-    The user_id is derived from the authenticated JWT.
+    Auto-prepends the user's saved startup context to every query.
     """
     user_id = current_user["id"]
-    logger.info(f"Pitchmate request: user={user_id}, query={req.query[:80]}...")
+    logger.info(f"Pitchmate request: user={user_id}, session_id={req.session_id}, query={req.query[:80]}...")
+
+    # Use startup context for this chat session (stored in session, not DB)
+    startup_context = get_session_context(req.session_id)
+    enriched_query = _build_enriched_query(req.query, startup_context)
+    if startup_context:
+        logger.info(f"Injected session context ({len(startup_context)} chars) for session {req.session_id}")
 
     try:
         from agents.agent_runner import handle_agent_request
@@ -45,7 +63,7 @@ async def pitchmate(
 
         response, actual_session_id = await handle_agent_request(
             user_id=user_id,
-            query=req.query,
+            query=enriched_query,
             agent=pitchmate_agent,
             app_name="pitchmate_app",
             session_id=req.session_id,

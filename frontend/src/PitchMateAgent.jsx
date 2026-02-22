@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { apiPitchmate, apiLogout, apiUploadDocument, apiListDocuments } from "./pitchmateApi";
+import { apiPitchmate, apiLogout, apiUploadDocument, apiListDocuments, apiSaveContext, apiGetContext } from "./pitchmateApi";
 
 const STARTER_PROMPTS = [
     "Help me validate my product idea",
@@ -32,55 +32,44 @@ function formatMessage(text) {
         .replace(/\n/g, "<br/>");
 }
 
-// ─── Knowledge Base Panel ────────────────────────────────────────────────────
+// ─── Panel: Share Your Idea (plain text context, scoped to this chat session) ───
 
-function KnowledgeBasePanel() {
+function IdeaContextPanel({ sessionId, setSessionId }) {
     const [open, setOpen] = useState(false);
-    const [text, setText] = useState("");
-    const [sourceName, setSourceName] = useState("");
-    const [uploading, setUploading] = useState(false);
-    const [uploadMsg, setUploadMsg] = useState(null); // { type: 'success'|'error', text }
-    const [docs, setDocs] = useState([]);
-    const [loadingDocs, setLoadingDocs] = useState(false);
+    const [context, setContext] = useState("");
+    const [saved, setSaved] = useState("");   // last saved value
+    const [saving, setSaving] = useState(false);
+    const [msg, setMsg] = useState(null);
 
-    const loadDocs = useCallback(async () => {
-        setLoadingDocs(true);
-        try {
-            const res = await apiListDocuments();
-            setDocs(res.documents || []);
-        } catch (e) {
-            setDocs([]);
-        } finally {
-            setLoadingDocs(false);
-        }
-    }, []);
-
+    // Load context for current session when panel opens
     useEffect(() => {
-        if (open) loadDocs();
-    }, [open, loadDocs]);
+        if (!open) return;
+        apiGetContext(sessionId)
+            .then(r => { setContext(r.context || ""); setSaved(r.context || ""); })
+            .catch(() => { });
+    }, [open, sessionId]);
 
-    const handleUpload = async () => {
-        if (!text.trim()) return;
-        setUploading(true);
-        setUploadMsg(null);
+    const handleSave = async () => {
+        if (!context.trim()) return;
+        setSaving(true); setMsg(null);
         try {
-            const res = await apiUploadDocument(text.trim(), sourceName.trim() || "pitch_context");
-            setUploadMsg({ type: "success", text: `✓ Stored ${res.chunks_stored} chunk(s) as "${res.source_name}"` });
-            setText("");
-            setSourceName("");
-            loadDocs();
+            const data = await apiSaveContext(context.trim(), sessionId);
+            setSaved(context.trim());
+            if (data.session_id && setSessionId) setSessionId(data.session_id);
+            setMsg({ type: "success", text: "✓ Context saved for this chat — agents will use it in this conversation" });
         } catch (e) {
-            setUploadMsg({ type: "error", text: `✗ ${e.message}` });
-        } finally {
-            setUploading(false);
-        }
+            setMsg({ type: "error", text: `✗ ${e.message}` });
+        } finally { setSaving(false); }
     };
+
+    const isDirty = context.trim() !== saved.trim();
 
     return (
         <div className="kb-panel">
-            <button className="kb-toggle-btn" onClick={() => setOpen((o) => !o)}>
+            <button className="kb-toggle-btn" onClick={() => setOpen(o => !o)}>
                 <span>💡</span>
                 <span>Share Your Idea</span>
+                {saved && <span className="kb-saved-dot" title="Context saved" />}
                 <svg style={{ marginLeft: "auto", transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}
                     width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                     <polyline points="6 9 12 15 18 9" />
@@ -90,58 +79,112 @@ function KnowledgeBasePanel() {
             {open && (
                 <div className="kb-body">
                     <p className="kb-desc">
-                        Describe your startup idea, paste pitch deck content, or share market research. Agents will use this as context.
+                        Describe your startup idea. It is included in <strong>this chat session</strong> only — no need to repeat yourself in this conversation.
                     </p>
-
-                    <div className="kb-field">
-                        <input
-                            className="kb-input"
-                            type="text"
-                            placeholder="Document name (e.g. pitch_context, market_research)"
-                            value={sourceName}
-                            onChange={(e) => setSourceName(e.target.value)}
-                        />
-                    </div>
-
                     <textarea
                         className="kb-textarea"
-                        placeholder="Describe your startup idea, problem you're solving, target market, team background, or paste your pitch deck content here..."
-                        value={text}
-                        onChange={(e) => setText(e.target.value)}
-                        rows={5}
+                        placeholder="What's your startup? What problem does it solve? Who are your customers? Paste your pitch summary, problem statement, or key context here..."
+                        value={context}
+                        onChange={e => { setContext(e.target.value); setMsg(null); }}
+                        rows={6}
                     />
-
                     <div className="kb-actions">
-                        <button className="kb-upload-btn" onClick={handleUpload} disabled={!text.trim() || uploading}>
-                            {uploading ? "Processing..." : "Submit Idea Context"}
-                        </button>
-                        <button className="kb-refresh-btn" onClick={loadDocs} title="Refresh document list">
-                            ↻
+                        <button className="kb-upload-btn" onClick={handleSave}
+                            disabled={!context.trim() || saving || !isDirty}>
+                            {saving ? "Saving..." : saved ? "Update Context" : "Save Context"}
                         </button>
                     </div>
-
-                    {uploadMsg && (
-                        <p className={`kb-msg ${uploadMsg.type}`}>{uploadMsg.text}</p>
+                    {msg && <p className={`kb-msg ${msg.type}`}>{msg.text}</p>}
+                    {saved && !isDirty && (
+                        <p className="kb-desc" style={{ color: "rgba(99,255,160,0.6)", marginTop: 4 }}>
+                            ✓ Agents know your idea
+                        </p>
                     )}
+                </div>
+            )}
+        </div>
+    );
+}
 
-                    {/* Document list */}
+// ─── Panel: Share Your Doc (pgvector knowledge base) ──────────────────────────
+
+function ShareDocPanel() {
+    const [open, setOpen] = useState(false);
+    const [text, setText] = useState("");
+    const [sourceName, setSourceName] = useState("");
+    const [uploading, setUploading] = useState(false);
+    const [uploadMsg, setUploadMsg] = useState(null);
+    const [docs, setDocs] = useState([]);
+    const [loadingDocs, setLoadingDocs] = useState(false);
+
+    const loadDocs = useCallback(async () => {
+        setLoadingDocs(true);
+        try { const r = await apiListDocuments(); setDocs(r.documents || []); }
+        catch { setDocs([]); }
+        finally { setLoadingDocs(false); }
+    }, []);
+
+    useEffect(() => { if (open) loadDocs(); }, [open, loadDocs]);
+
+    const handleUpload = async () => {
+        if (!text.trim()) return;
+        setUploading(true); setUploadMsg(null);
+        try {
+            const res = await apiUploadDocument(text.trim(), sourceName.trim() || "document");
+            setUploadMsg({ type: "success", text: `✓ Stored ${res.chunks_stored} chunk(s) as "${res.source_name}"` });
+            setText(""); setSourceName(""); loadDocs();
+        } catch (e) {
+            setUploadMsg({ type: "error", text: `✗ ${e.message}` });
+        } finally { setUploading(false); }
+    };
+
+    return (
+        <div className="kb-panel" style={{ marginTop: 10 }}>
+            <button className="kb-toggle-btn" onClick={() => setOpen(o => !o)}>
+                <span>📄</span>
+                <span>Share Your Doc</span>
+                {docs.length > 0 && <span className="kb-badge">{docs.length}</span>}
+                <svg style={{ marginLeft: "auto", transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}
+                    width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <polyline points="6 9 12 15 18 9" />
+                </svg>
+            </button>
+
+            {open && (
+                <div className="kb-body">
+                    <p className="kb-desc">
+                        Upload large documents (market research, pitch deck text, competitor analysis) for semantic search by agents.
+                    </p>
+                    <div className="kb-field">
+                        <input className="kb-input" type="text"
+                            placeholder="Document name (e.g. market_research, competitor_analysis)"
+                            value={sourceName} onChange={e => setSourceName(e.target.value)} />
+                    </div>
+                    <textarea className="kb-textarea"
+                        placeholder="Paste full document text here — market reports, pitch deck slides, customer research, investor memos..."
+                        value={text} onChange={e => { setText(e.target.value); setUploadMsg(null); }} rows={5} />
+                    <div className="kb-actions">
+                        <button className="kb-upload-btn" onClick={handleUpload} disabled={!text.trim() || uploading}>
+                            {uploading ? "Embedding..." : "Upload to Knowledge Base"}
+                        </button>
+                        <button className="kb-refresh-btn" onClick={loadDocs} title="Refresh">↻</button>
+                    </div>
+                    {uploadMsg && <p className={`kb-msg ${uploadMsg.type}`}>{uploadMsg.text}</p>}
                     <div className="kb-docs-section">
-                        <p className="kb-docs-label">Submitted contexts</p>
-                        {loadingDocs ? (
-                            <p className="kb-docs-empty">Loading...</p>
-                        ) : docs.length === 0 ? (
-                            <p className="kb-docs-empty">No context submitted yet.</p>
-                        ) : (
-                            <div className="kb-doc-list">
-                                {docs.map((d) => (
-                                    <div key={d.file_name} className="kb-doc-item">
-                                        <span className="kb-doc-icon">📄</span>
-                                        <span className="kb-doc-name">{d.file_name}</span>
-                                        <span className="kb-doc-count">{d.count} chunks</span>
+                        <p className="kb-docs-label">Stored documents</p>
+                        {loadingDocs ? <p className="kb-docs-empty">Loading...</p>
+                            : docs.length === 0 ? <p className="kb-docs-empty">No documents uploaded yet.</p>
+                                : (
+                                    <div className="kb-doc-list">
+                                        {docs.map(d => (
+                                            <div key={d.file_name} className="kb-doc-item">
+                                                <span className="kb-doc-icon">📄</span>
+                                                <span className="kb-doc-name">{d.file_name}</span>
+                                                <span className="kb-doc-count">{d.count} chunks</span>
+                                            </div>
+                                        ))}
                                     </div>
-                                ))}
-                            </div>
-                        )}
+                                )}
                     </div>
                 </div>
             )}
@@ -236,10 +279,12 @@ export default function PitchMateAgent({ user }) {
             {/* Body: sidebar + chat */}
             <div className="pm-body">
 
-                {/* Left sidebar — Share Your Idea */}
+                {/* Left sidebar — Share Your Idea + Share Your Doc */}
                 <aside className="pm-sidebar">
-                    <KnowledgeBasePanel />
+                    <IdeaContextPanel sessionId={sessionId} setSessionId={setSessionId} />
+                    <ShareDocPanel />
                 </aside>
+
 
                 {/* Right — Chat */}
                 <div className="pm-main">
@@ -378,6 +423,8 @@ const STYLES = `
   .kb-doc-icon { font-size:13px; flex-shrink:0; }
   .kb-doc-name { flex:1; font-size:11px; font-family:'DM Mono',monospace; color:rgba(255,255,255,.6); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .kb-doc-count { font-size:10px; font-family:'DM Mono',monospace; color:rgba(99,60,255,.7); background:rgba(99,60,255,.1); padding:2px 6px; border-radius:4px; flex-shrink:0; }
+  .kb-saved-dot { width:7px; height:7px; background:#63ffa0; border-radius:50%; box-shadow:0 0 6px rgba(99,255,160,.6); flex-shrink:0; }
+  .kb-badge { font-size:10px; font-family:'DM Mono',monospace; color:rgba(255,90,60,.8); background:rgba(255,90,60,.1); border:1px solid rgba(255,90,60,.2); padding:1px 6px; border-radius:10px; flex-shrink:0; }
 
   /* Main chat */
   .pm-main { flex:1; display:flex; flex-direction:column; overflow:hidden; }

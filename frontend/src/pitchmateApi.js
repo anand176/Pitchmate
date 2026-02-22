@@ -123,3 +123,41 @@ export async function apiListDocuments() {
     return data; // { documents: [...] }
 }
 
+// ─── Startup Context (per chat session, not DB) ──────────────────────────────
+
+/**
+ * Save startup context for the current chat session.
+ * If sessionId is omitted, backend creates a new session and returns its id — use that for subsequent chat.
+ * @param {string} context - Startup idea text
+ * @param {string|null} sessionId - Current chat session id (optional)
+ * @returns {{ context: string, message: string, session_id?: string }}
+ */
+export async function apiSaveContext(context, sessionId = null) {
+    const headers = await authHeaders();
+    const res = await fetch(`${BACKEND}/agents/context`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ context, session_id: sessionId }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data?.detail || `Save failed (${res.status})`);
+    return data; // { context, message, session_id? }
+}
+
+/**
+ * Retrieve startup context for the given chat session.
+ * @param {string|null} sessionId - Chat session id (optional); if omitted, returns no context.
+ * @returns {{ context: string, message?: string }}
+ */
+export async function apiGetContext(sessionId = null) {
+    const headers = await authHeaders();
+    const url = sessionId
+        ? `${BACKEND}/agents/context?session_id=${encodeURIComponent(sessionId)}`
+        : `${BACKEND}/agents/context`;
+    const res = await fetch(url, { method: "GET", headers });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data?.detail || `Get failed (${res.status})`);
+    return data; // { context }
+}
+
+
