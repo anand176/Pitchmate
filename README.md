@@ -86,7 +86,7 @@ npm run dev
 
 ### 2. Chat UI
 
-<img width="1904" height="857" alt="image" src="https://github.com/user-attachments/assets/c123ad9a-32c9-43b2-a9d4-e487a4177201" />
+<img width="1901" height="854" alt="image" src="https://github.com/user-attachments/assets/4b55648c-131f-4ff4-b49e-7fe35320c939" />
 
 ### 3. Chat Example
 
