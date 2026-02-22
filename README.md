@@ -1,10 +1,10 @@
-# 🚀 Pitchmate — AI Pitch Co-pilot
+#  Pitchmate — AI Pitch Co-pilot
 
 > An AI-powered pitch deck assistant for startup founders. Review your deck, validate your market, craft your GTM strategy, and reach the right investors — all in one place.
 
 ---
 
-## ✨ Features
+##  Features
 
 | Agent | Capability |
 |-------|-----------|
@@ -16,7 +16,7 @@
 
 ---
 
-## 🏗 Architecture
+##  Architecture
 
 ```
 frontend/          ← React + Vite (auth + chat UI)
@@ -53,7 +53,7 @@ Create `backend/.env`:
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_KEY=your-service-role-key
 GEMINI_API_KEY=your-gemini-api-key
-PITCHMATE_MODEL=gemini-2.5-flash
+PITCHMATE_MODEL=llm-model-name
 ```
 
 ```bash
@@ -75,4 +75,5 @@ VITE_SUPABASE_ANON_KEY=your-anon-key
 ```bash
 npm run dev
 # → http://localhost:5173
+
 ```
