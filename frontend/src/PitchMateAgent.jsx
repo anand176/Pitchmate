@@ -79,8 +79,8 @@ function KnowledgeBasePanel() {
     return (
         <div className="kb-panel">
             <button className="kb-toggle-btn" onClick={() => setOpen((o) => !o)}>
-                <span>📚</span>
-                <span>Knowledge Base</span>
+                <span>💡</span>
+                <span>Share Your Idea</span>
                 <svg style={{ marginLeft: "auto", transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}
                     width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                     <polyline points="6 9 12 15 18 9" />
@@ -90,8 +90,7 @@ function KnowledgeBasePanel() {
             {open && (
                 <div className="kb-body">
                     <p className="kb-desc">
-                        Paste your pitch context, market research, or company docs. The AI agents
-                        will reference this when answering your questions.
+                        Describe your startup idea, paste pitch deck content, or share market research. Agents will use this as context.
                     </p>
 
                     <div className="kb-field">
@@ -106,7 +105,7 @@ function KnowledgeBasePanel() {
 
                     <textarea
                         className="kb-textarea"
-                        placeholder="Paste your product description, problem statement, team background, market data, or any relevant context..."
+                        placeholder="Describe your startup idea, problem you're solving, target market, team background, or paste your pitch deck content here..."
                         value={text}
                         onChange={(e) => setText(e.target.value)}
                         rows={5}
@@ -114,7 +113,7 @@ function KnowledgeBasePanel() {
 
                     <div className="kb-actions">
                         <button className="kb-upload-btn" onClick={handleUpload} disabled={!text.trim() || uploading}>
-                            {uploading ? "Embedding..." : "Upload to Knowledge Base"}
+                            {uploading ? "Processing..." : "Submit Idea Context"}
                         </button>
                         <button className="kb-refresh-btn" onClick={loadDocs} title="Refresh document list">
                             ↻
@@ -127,11 +126,11 @@ function KnowledgeBasePanel() {
 
                     {/* Document list */}
                     <div className="kb-docs-section">
-                        <p className="kb-docs-label">Stored documents</p>
+                        <p className="kb-docs-label">Submitted contexts</p>
                         {loadingDocs ? (
                             <p className="kb-docs-empty">Loading...</p>
                         ) : docs.length === 0 ? (
-                            <p className="kb-docs-empty">No documents uploaded yet.</p>
+                            <p className="kb-docs-empty">No context submitted yet.</p>
                         ) : (
                             <div className="kb-doc-list">
                                 {docs.map((d) => (
@@ -237,7 +236,7 @@ export default function PitchMateAgent({ user }) {
             {/* Body: sidebar + chat */}
             <div className="pm-body">
 
-                {/* Left sidebar — Knowledge Base */}
+                {/* Left sidebar — Share Your Idea */}
                 <aside className="pm-sidebar">
                     <KnowledgeBasePanel />
                 </aside>
@@ -247,10 +246,12 @@ export default function PitchMateAgent({ user }) {
                     <div className="pm-chat-area" ref={chatRef}>
                         {messages.length === 0 && !loading && (
                             <div className="pm-welcome">
-                                <span className="pm-welcome-icon">🚀</span>
+                                <div className="pm-welcome-icon">
+                                    <span style={{ fontWeight: 800, fontSize: 28, color: 'white', letterSpacing: '-1px', fontFamily: 'Syne,sans-serif' }}>P</span>
+                                </div>
                                 <h2>Ready to build your pitch?</h2>
                                 <p>
-                                    I'm your AI pitch co-pilot. Upload your context in the sidebar,
+                                    Share your startup idea in the sidebar,
                                     then ask me to review your deck, validate your market, or find investors.
                                 </p>
                                 <div className="pm-starters">
@@ -264,7 +265,7 @@ export default function PitchMateAgent({ user }) {
                         {messages.map((msg, i) => (
                             <div key={i} className={`pm-message ${msg.role}`}>
                                 <div className={`pm-avatar ${msg.role === "assistant" ? "ai" : "user-av"}`}>
-                                    {msg.role === "assistant" ? "🚀" : userInitial}
+                                    {msg.role === "assistant" ? <span style={{ fontWeight: 800, fontSize: 13 }}>P</span> : userInitial}
                                 </div>
                                 <div
                                     className={`pm-bubble ${msg.role === "assistant" ? "ai" : "user"} ${msg.isError ? "err" : ""}`}
@@ -385,7 +386,8 @@ const STYLES = `
   .pm-chat-area::-webkit-scrollbar-thumb { background:rgba(99,60,255,.3); border-radius:2px; }
 
   .pm-welcome { text-align:center; padding:48px 20px 32px; animation:fadeUp .6s ease; }
-  .pm-welcome-icon { font-size:44px; margin-bottom:14px; display:block; }
+  .pm-welcome-icon { width:64px; height:64px; background:linear-gradient(135deg,#633cff,#ff5a3c); border-radius:18px; display:flex; align-items:center; justify-content:center; margin:0 auto 18px; box-shadow:0 8px 32px rgba(99,60,255,.4); }
+
   .pm-welcome h2 { font-size:26px; font-weight:800; letter-spacing:-1px; margin-bottom:10px; background:linear-gradient(135deg,#e8e6f0 0%,#9b8cff 50%,#ff5a3c 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
   .pm-welcome p { color:rgba(255,255,255,.45); font-size:13px; line-height:1.7; max-width:440px; margin:0 auto 28px; }
   .pm-starters { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; max-width:520px; margin:0 auto; }
