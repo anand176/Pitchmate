@@ -1,6 +1,7 @@
 """
-Web Search sub-agent — real-time market and investor research.
-Uses SerpAPI (Google Search + Google News) via Python; requires SERPAPI_API_KEY.
+Research Agent — searches for market size data, identifies key competitors,
+and pulls relevant industry trends. Uses SerpAPI (Google Search + Google News);
+requires SERPAPI_API_KEY.
 """
 
 import google.genai.types as genai_types
@@ -14,10 +15,10 @@ brave_search_mcp_agent = Agent(
     name="brave_search_mcp_agent",
     model=config.agents.get_model_for_agent("brave_search_mcp_agent"),
     description=(
-        "Performs real-time web research on markets, competitors, and investors "
-        "using SerpAPI (Google Search + Google News). "
-        "Use when the user asks to validate market size, research competitors, "
-        "find active investors in a space, or get current industry data and trends. "
+        "Research agent that searches for market size data, identifies key competitors, "
+        "and pulls relevant industry trends using SerpAPI (Google Search + Google News). "
+        "Use when the user needs: (1) market size / TAM/SAM/SOM data, (2) competitor landscape "
+        "and key players, or (3) current industry trends and dynamics. "
         "Requires SERPAPI_API_KEY in the environment."
     ),
     instruction=prompt.INSTRUCTION,

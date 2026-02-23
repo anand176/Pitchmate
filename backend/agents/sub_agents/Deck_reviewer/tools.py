@@ -1,89 +1,114 @@
 """
-Deck Reviewer tools — slide analysis and deck scoring.
-These are pure-LLM reasoning tools; the agent uses them as structured function-call wrappers.
+Deck Creator tools — build a pitch deck .pptx using python-pptx.
 """
 
 import json
-from typing import Optional
+import os
+import re
+from datetime import datetime
+from core.config import config
+
+_ARTIFACTS_DIR = getattr(config, "artifacts_root_dir", "./artifacts")
 
 
-# Slide quality dimensions
-SLIDE_DIMENSIONS = {
-    "problem": ["clarity", "pain_severity", "evidence", "specificity"],
-    "solution": ["differentiation", "simplicity", "direct_fit_to_problem", "scalability"],
-    "market": ["tam_credibility", "sam_definition", "som_realism", "source_citation"],
-    "traction": ["metric_specificity", "growth_rate", "revenue_evidence", "customer_proof"],
-    "team": ["domain_expertise", "execution_track_record", "complementary_skills", "advisor_credibility"],
-    "business_model": ["revenue_stream_clarity", "margin_profile", "unit_economics", "monetization_path"],
-    "financials": ["projection_realism", "assumption_transparency", "burn_rate", "path_to_profitability"],
-    "ask": ["amount_justification", "use_of_funds_breakdown", "milestones", "valuation_rationale"],
-}
+def _sanitize_filename(name: str) -> str:
+    """Return a safe filename stem (no path, no extension)."""
+    stem = re.sub(r"[^\w\s-]", "", (name or "pitch_deck").strip())[:80]
+    return stem or "pitch_deck"
 
 
-def review_slide(slide_name: str, content: str) -> str:
+def create_pitch_deck_pptx(content_json: str) -> str:
     """
-    Analyse a single pitch deck slide and return structured investor-grade feedback.
+    Create a PowerPoint pitch deck (.pptx) from structured JSON content and save it to the artifacts directory.
+
+    Call this with a JSON string containing company_name, tagline, and a list of slides.
+    Each slide has "title" and "bullets" (list of strings). The first slide is always the title slide;
+    subsequent slides are title + bullet content.
 
     Args:
-        slide_name: Name of the slide (e.g. 'problem', 'solution', 'market', 'traction',
-                    'team', 'business_model', 'financials', 'ask').
-        content: The text content or description of the slide.
+        content_json: JSON string with structure:
+            {
+              "company_name": "Startup Name",
+              "tagline": "One-line tagline",
+              "slides": [
+                {"title": "The Problem", "bullets": ["Bullet 1", "Bullet 2"]},
+                {"title": "Our Solution", "bullets": ["..."]},
+                {"title": "Market", "bullets": ["..."]},
+                ...
+              ]
+            }
+            Standard pitch flow: Problem, Solution, Market (TAM/SAM/SOM), Product, Business Model,
+            Traction, Competition, Team, Financials, The Ask, Thank You / Contact.
 
     Returns:
-        JSON string with strengths, weaknesses, suggestions, and a quality score (0-10).
+        Message with the file path to the created .pptx, or an error message.
     """
-    slide_name = slide_name.lower().replace(" ", "_")
-    dimensions = SLIDE_DIMENSIONS.get(slide_name, ["clarity", "specificity", "evidence", "investor_appeal"])
+    try:
+        from pptx import Presentation
+        from pptx.util import Inches, Pt
+    except ImportError:
+        return (
+            "Deck creation failed: python-pptx is not installed. "
+            "Install with: pip install python-pptx"
+        )
 
-    result = {
-        "slide": slide_name,
-        "content_received": content[:300] + ("..." if len(content) > 300 else ""),
-        "review_dimensions": dimensions,
-        "instructions_for_agent": (
-            f"You are reviewing the '{slide_name}' slide of a pitch deck. "
-            f"The content is provided above. Evaluate it against these dimensions: {', '.join(dimensions)}. "
-            "Return your review as:\n"
-            "✅ STRENGTHS: [bullet points of what works]\n"
-            "⚠️ WEAKNESSES: [bullet points of issues]\n"
-            "💡 SUGGESTIONS: [specific, actionable improvements]\n"
-            "📊 SCORE: [X/10] with a one-line justification.\n"
-            "Be direct and honest — like a partner at a top-tier VC firm."
-        ),
-    }
-    return json.dumps(result, indent=2)
+    try:
+        data = json.loads(content_json)
+    except json.JSONDecodeError as e:
+        return f"Invalid JSON for deck content: {e}. Provide a valid JSON with company_name, tagline, and slides (list of {{title, bullets}})."
 
+    company_name = (data.get("company_name") or "Pitch Deck").strip()
+    tagline = (data.get("tagline") or "").strip()
+    slides_spec = data.get("slides")
+    if not isinstance(slides_spec, list):
+        return "JSON must include 'slides': a list of objects with 'title' and 'bullets' (list of strings)."
 
-def score_deck(slides_dict: dict) -> str:
-    """
-    Score an entire pitch deck across all key sections and return an overall investor-readiness score.
+    os.makedirs(_ARTIFACTS_DIR, exist_ok=True)
+    safe_name = _sanitize_filename(company_name)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"pitch_deck_{safe_name}_{timestamp}.pptx"
+    filepath = os.path.join(_ARTIFACTS_DIR, filename)
 
-    Args:
-        slides_dict: Dictionary mapping slide names to their content.
-                     Example: {"problem": "We solve X...", "solution": "Our product does Y..."}
+    try:
+        prs = Presentation()
+        # Title slide (layout index 0: title + subtitle)
+        title_layout = prs.slide_layouts[0]
+        title_slide = prs.slides.add_slide(title_layout)
+        title_slide.shapes.title.text = company_name
+        if tagline and len(title_slide.placeholders) > 1:
+            title_slide.placeholders[1].text = tagline
 
-    Returns:
-        JSON string with per-slide scores, weighted overall score (0-100), and key findings.
-    """
-    present_slides = list(slides_dict.keys())
-    missing_slides = [s for s in SLIDE_DIMENSIONS.keys() if s not in present_slides]
+        # Content slides (layout index 1: title and body)
+        content_layout = prs.slide_layouts[1]
+        for spec in slides_spec:
+            if not isinstance(spec, dict):
+                continue
+            title = (spec.get("title") or "Slide").strip()
+            bullets = spec.get("bullets")
+            if not isinstance(bullets, list):
+                bullets = [str(spec.get("body", ""))] if spec.get("body") else []
+            bullet_strs = [str(b).strip() for b in bullets if b]
 
-    result = {
-        "slides_provided": present_slides,
-        "slides_missing": missing_slides,
-        "completeness_penalty": len(missing_slides) * 5,
-        "instructions_for_agent": (
-            "You are scoring a complete pitch deck for investor readiness (0-100). "
-            f"Slides provided: {present_slides}. Missing slides: {missing_slides}. "
-            "For each provided slide, give a score out of 10 and one-line reasoning. "
-            "Then compute: Overall Score = (sum of slide scores / max possible) * 100 - completeness_penalty. "
-            "Format:\n"
-            "| Slide | Score | Key Issue |\n"
-            "|-------|-------|----------|\n"
-            "[rows for each slide]\n\n"
-            "**Overall Investor-Readiness Score: XX/100**\n"
-            "**Top 3 Action Items before fundraising:**\n"
-            "1. ...\n2. ...\n3. ..."
-        ),
-        "slides_content": {k: v[:200] for k, v in slides_dict.items()},
-    }
-    return json.dumps(result, indent=2)
+            slide = prs.slides.add_slide(content_layout)
+            slide.shapes.title.text = title
+            if bullet_strs:
+                body = slide.placeholders[1]
+                tf = body.text_frame
+                if hasattr(tf, "clear"):
+                    tf.clear()
+                for i, line in enumerate(bullet_strs):
+                    if i == 0:
+                        p = tf.paragraphs[0]
+                        p.text = line
+                        p.font.size = Pt(14)
+                    else:
+                        p = tf.add_paragraph()
+                        p.text = line
+                        p.level = 0
+                        p.font.size = Pt(14)
+
+        prs.save(filepath)
+        abs_path = os.path.abspath(filepath)
+        return f"Pitch deck created: {abs_path}"
+    except Exception as e:
+        return f"Deck creation failed: {str(e)}"
