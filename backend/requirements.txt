@@ -1,3 +1,4 @@
+# Pinned versions to avoid pip "resolution-too-deep" on Render/CI
 aiofiles==25.1.0
 aiohttp==3.13.3
 alembic==1.18.0
@@ -5,32 +6,32 @@ beautifulsoup4==4.14.2
 botbuilder-core==4.17.1
 celery[redis]==5.6.2
 email-validator==2.3.0
-fastapi[standard-no-fastapi-cloud-cli]
+fastapi[standard-no-fastapi-cloud-cli]==0.115.6
 google-adk==1.22.0
-google-generativeai>=0.8.0
-mcp>=1.0.0
+google-generativeai==0.8.3
 httpx==0.28.1
 instructor==1.14.1
 litellm==1.80.13
 markdown-pdf==1.10
+mcp==1.0.0
 psycopg[binary,pool]==3.3.2
-pwdlib[argon2]>=0.3.0
+pwdlib[argon2]==0.3.0
 pydantic_settings==2.12.0
-# Supabase — auth + pgvector knowledge base (replaces Pinecone + qdrant)
-supabase>=2.10.0
-# ML / embeddings
-sentence-transformers>=2.2.0
-docker>=7.0.0
-psutil>=5.9.0
+# Supabase — auth + pgvector knowledge base
+supabase==2.10.0
+# ML / embeddings (pinned to limit resolver depth)
+sentence-transformers==2.2.2
+docker==7.0.0
+psutil==5.9.0
 PyGithub==2.8.1
 pyjwt==2.10.1
-PyMuPDF>=1.25.3
-pypdf>=4.0.0
+PyMuPDF==1.25.3
+pypdf==4.0.0
 python-docx==1.2.0
-python-pptx>=0.6.21
-reportlab>=4.0.0
+python-pptx==0.6.21
+reportlab==4.2.5
 python-dotenv==1.2.1
 python-multipart==0.0.20
 slowapi==0.1.9
 SQLAlchemy==2.0.45
-google-search-results>=2.4.2
+google-search-results==2.4.2
