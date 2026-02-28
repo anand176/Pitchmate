@@ -9,13 +9,11 @@ from google.adk.tools.agent_tool import AgentTool
 
 from agents import prompt
 from agents.sub_agents import (
-    deck_creator_agent,
     market_validator_agent,
-    market_strategist_agent,
     investor_outreacher_agent,
     knowledge_base_agent,
     figma_mcp_agent,
-    brave_search_mcp_agent,
+    browse_mcp_agent,
     drawio_mcp_agent,
     pitch_writer_agent,
 )
@@ -28,13 +26,11 @@ pitchmate_agent = Agent(
     planner=PlanReActPlanner(),
     instruction=prompt.INSTRUCTION,
     tools=[
-        AgentTool(agent=deck_creator_agent, skip_summarization=False),
         AgentTool(agent=market_validator_agent, skip_summarization=False),
-        AgentTool(agent=market_strategist_agent, skip_summarization=False),
         AgentTool(agent=investor_outreacher_agent, skip_summarization=False),
         AgentTool(agent=knowledge_base_agent, skip_summarization=False),
         AgentTool(agent=figma_mcp_agent, skip_summarization=False),
-        AgentTool(agent=brave_search_mcp_agent, skip_summarization=False),
+        AgentTool(agent=browse_mcp_agent, skip_summarization=False),
         AgentTool(agent=drawio_mcp_agent, skip_summarization=False),
         AgentTool(agent=pitch_writer_agent, skip_summarization=False),
     ],

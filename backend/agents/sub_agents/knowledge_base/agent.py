@@ -10,7 +10,7 @@ from agents.sub_agents.knowledge_base.tools import (
 knowledge_base_agent = Agent(
     name="knowledge_base_agent",
     model=config.agents.get_model_for_agent("knowledge_base_agent"),
-    description="Answers questions about uploaded documents by searching the vector DB (knowledge base). Use when the user asks anything about docs they uploaded or what is in the knowledge base.",
+    description="Answers questions about uploaded documents and reviews pitch decks by searching the vector DB. Use when the user asks to search docs, review their deck, analyse their pitch deck, or what is in the knowledge base (deck content should be uploaded first).",
     instruction=prompt.INSTRUCTION,
     tools=[search_knowledge_base, list_uploaded_documents],
 )
