@@ -33,5 +33,4 @@ python-dotenv==1.2.1
 python-multipart==0.0.20
 slowapi==0.1.9
 SQLAlchemy==2.0.45
-# Web search via SerpAPI (Google Search + Google News); requires SERPAPI_API_KEY
 google-search-results>=2.4.2

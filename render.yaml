@@ -1,0 +1,20 @@
+# Render blueprint — deploy backend only (frontend deploy separately to Vercel/Netlify)
+# https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: pitchmate-api
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: PITCHMATE_MODEL
+        value: gemini-2.5-flash
+      - key: ARTIFACTS_ROOT_DIR
+        value: /tmp/artifacts

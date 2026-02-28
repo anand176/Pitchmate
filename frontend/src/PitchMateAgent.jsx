@@ -509,8 +509,8 @@ const STYLES = `
   .pulse { width:6px; height:6px; background:#0ea5e9; border-radius:50%; animation:pulse 2s infinite; }
   @keyframes pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:.4; transform:scale(.8); } }
   .pm-user-badge { width:30px; height:30px; background:linear-gradient(135deg,#0ea5e9,#06b6d4); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:white; }
-  .pm-new-chat-btn { padding:6px 12px; background:rgba(14,165,233,.15); border:1px solid rgba(14,165,233,.35); border-radius:8px; color:#7dd3fc; font-size:12px; font-family:'Inter',sans-serif; font-weight:600; cursor:pointer; transition:all .2s; }
-  .pm-new-chat-btn:hover { background:rgba(14,165,233,.25); border-color:rgba(14,165,233,.5); color:#e8e6f0; }
+  .pm-new-chat-btn { padding:6px 12px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); border-radius:8px; color:rgba(255,255,255,.6); font-size:12px; font-family:'Inter',sans-serif; font-weight:600; cursor:pointer; transition:all .2s; }
+  .pm-new-chat-btn:hover { background:rgba(6,182,212,.15); border-color:rgba(6,182,212,.3); color:#67e8f9; }
   .pm-logout-btn { padding:6px 12px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); border-radius:8px; color:rgba(255,255,255,.6); font-size:12px; font-family:'Inter',sans-serif; font-weight:600; cursor:pointer; transition:all .2s; }
   .pm-logout-btn:hover { background:rgba(6,182,212,.15); border-color:rgba(6,182,212,.3); color:#67e8f9; }
 
