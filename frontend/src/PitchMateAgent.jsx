@@ -1,15 +1,12 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { apiPitchmate, apiLogout, apiUploadDocument, apiListDocuments, apiSaveContext, apiGetContext, apiDownloadArtifact } from "./pitchmateApi";
+import { apiPitchmate, apiLogout, apiUploadDocument, apiUploadDocumentFile, apiListDocuments, apiSaveContext, apiSaveContextFromFile, apiGetContext, apiDownloadArtifact } from "./pitchmateApi";
 
 const STARTER_PROMPTS = [
     "Help me validate my product idea",
     "Write me a 60-second elevator pitch",
     "What questions will investors ask me?",
     "Review my pitch deck problem slide",
-    "How do I approach seed investors?",
-    "What's my go-to-market strategy?",
     "Draft an investor outreach email",
-    "Prepare me for investor meetings",
     "Create a deck / report for my product",
 ];
 
@@ -56,7 +53,9 @@ function IdeaContextPanel({ sessionId, setSessionId }) {
     const [context, setContext] = useState("");
     const [saved, setSaved] = useState("");   // last saved value
     const [saving, setSaving] = useState(false);
+    const [fileUploading, setFileUploading] = useState(false);
     const [msg, setMsg] = useState(null);
+    const ideaFileInputRef = useRef(null);
 
     // Load context for current session when panel opens
     useEffect(() => {
@@ -79,12 +78,35 @@ function IdeaContextPanel({ sessionId, setSessionId }) {
         } finally { setSaving(false); }
     };
 
+    const handleIdeaFileUpload = async (e) => {
+        const file = e?.target?.files?.[0];
+        if (!file) return;
+        const ext = (file.name || "").toLowerCase();
+        if (!ext.endsWith(".pdf") && !ext.endsWith(".docx")) {
+            setMsg({ type: "error", text: "Only PDF and DOCX files are allowed." });
+            return;
+        }
+        setFileUploading(true); setMsg(null);
+        try {
+            const data = await apiSaveContextFromFile(file, sessionId);
+            setContext(data.context || "");
+            setSaved(data.context || "");
+            if (data.session_id && setSessionId) setSessionId(data.session_id);
+            setMsg({ type: "success", text: "✓ Context saved from file — agents will use it in this conversation" });
+        } catch (err) {
+            setMsg({ type: "error", text: `✗ ${err.message}` });
+        } finally {
+            setFileUploading(false);
+            if (ideaFileInputRef.current) ideaFileInputRef.current.value = "";
+        }
+    };
+
     const isDirty = context.trim() !== saved.trim();
 
     return (
         <div className="kb-panel">
             <button className="kb-toggle-btn" onClick={() => setOpen(o => !o)}>
-                <span>💡</span>
+                <span></span>
                 <span>Share Your Idea</span>
                 {saved && <span className="kb-saved-dot" title="Context saved" />}
                 <svg style={{ marginLeft: "auto", transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}
@@ -98,6 +120,15 @@ function IdeaContextPanel({ sessionId, setSessionId }) {
                     <p className="kb-desc">
                         Describe your startup idea. It is included in <strong>this chat session</strong> only — no need to repeat yourself in this conversation.
                     </p>
+                    <div className="kb-file-upload-row">
+                        <input ref={ideaFileInputRef} type="file" accept=".pdf,.docx" className="kb-file-input"
+                            onChange={handleIdeaFileUpload} disabled={fileUploading} />
+                        <button type="button" className="kb-upload-file-btn" onClick={() => ideaFileInputRef.current?.click()}
+                            disabled={fileUploading}>
+                            {fileUploading ? "Uploading…" : "Upload"}
+                        </button>
+                    </div>
+                    <p className="kb-divider">— or paste text below —</p>
                     <textarea
                         className="kb-textarea"
                         placeholder="What's your startup? What problem does it solve? Who are your customers? Paste your pitch summary, problem statement, or key context here..."
@@ -130,9 +161,11 @@ function ShareDocPanel() {
     const [text, setText] = useState("");
     const [sourceName, setSourceName] = useState("");
     const [uploading, setUploading] = useState(false);
+    const [fileUploading, setFileUploading] = useState(false);
     const [uploadMsg, setUploadMsg] = useState(null);
     const [docs, setDocs] = useState([]);
     const [loadingDocs, setLoadingDocs] = useState(false);
+    const fileInputRef = useRef(null);
 
     const loadDocs = useCallback(async () => {
         setLoadingDocs(true);
@@ -155,10 +188,31 @@ function ShareDocPanel() {
         } finally { setUploading(false); }
     };
 
+    const handleFileUpload = async (e) => {
+        const file = e?.target?.files?.[0];
+        if (!file) return;
+        const ext = (file.name || "").toLowerCase();
+        if (!ext.endsWith(".pdf") && !ext.endsWith(".docx")) {
+            setUploadMsg({ type: "error", text: "Only PDF and DOCX files are allowed." });
+            return;
+        }
+        setFileUploading(true); setUploadMsg(null);
+        try {
+            const res = await apiUploadDocumentFile(file);
+            setUploadMsg({ type: "success", text: `✓ Stored ${res.chunks_stored} chunk(s) from "${res.source_name}"` });
+            loadDocs();
+        } catch (err) {
+            setUploadMsg({ type: "error", text: `✗ ${err.message}` });
+        } finally {
+            setFileUploading(false);
+            if (fileInputRef.current) fileInputRef.current.value = "";
+        }
+    };
+
     return (
         <div className="kb-panel" style={{ marginTop: 10 }}>
             <button className="kb-toggle-btn" onClick={() => setOpen(o => !o)}>
-                <span>📄</span>
+                <span></span>
                 <span>Share Your Doc</span>
                 {docs.length > 0 && <span className="kb-badge">{docs.length}</span>}
                 <svg style={{ marginLeft: "auto", transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}
@@ -172,6 +226,15 @@ function ShareDocPanel() {
                     <p className="kb-desc">
                         Upload large documents (market research, pitch deck text, competitor analysis) for semantic search by agents.
                     </p>
+                    <div className="kb-file-upload-row">
+                        <input ref={fileInputRef} type="file" accept=".pdf,.docx" className="kb-file-input"
+                            onChange={handleFileUpload} disabled={fileUploading} />
+                        <button type="button" className="kb-upload-file-btn" onClick={() => fileInputRef.current?.click()}
+                            disabled={fileUploading}>
+                            {fileUploading ? "Uploading…" : "Upload"}
+                        </button>
+                    </div>
+                    <p className="kb-divider">— or paste text below —</p>
                     <div className="kb-field">
                         <input className="kb-input" type="text"
                             placeholder="Document name (e.g. market_research, competitor_analysis)"
@@ -283,6 +346,9 @@ export default function PitchMateAgent({ user }) {
                     <p>AI PITCH CO-PILOT</p>
                 </div>
                 <div className="pm-header-right">
+                    <button type="button" className="pm-new-chat-btn" onClick={() => { setMessages([]); setSessionId(null); setInput(""); }} title="Start a new chat">
+                        New chat
+                    </button>
                     {sessionId && (
                         <div className="pm-session-pill" title="Multi-turn session active">
                             <div className="pulse" /> Session active
@@ -443,7 +509,9 @@ const STYLES = `
   .pulse { width:6px; height:6px; background:#0ea5e9; border-radius:50%; animation:pulse 2s infinite; }
   @keyframes pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:.4; transform:scale(.8); } }
   .pm-user-badge { width:30px; height:30px; background:linear-gradient(135deg,#0ea5e9,#06b6d4); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:white; }
-  .pm-logout-btn { padding:6px 12px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); border-radius:8px; color:rgba(255,255,255,.6); font-size:12px; font-family:'Syne',sans-serif; font-weight:600; cursor:pointer; transition:all .2s; }
+  .pm-new-chat-btn { padding:6px 12px; background:rgba(14,165,233,.15); border:1px solid rgba(14,165,233,.35); border-radius:8px; color:#7dd3fc; font-size:12px; font-family:'Inter',sans-serif; font-weight:600; cursor:pointer; transition:all .2s; }
+  .pm-new-chat-btn:hover { background:rgba(14,165,233,.25); border-color:rgba(14,165,233,.5); color:#e8e6f0; }
+  .pm-logout-btn { padding:6px 12px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); border-radius:8px; color:rgba(255,255,255,.6); font-size:12px; font-family:'Inter',sans-serif; font-weight:600; cursor:pointer; transition:all .2s; }
   .pm-logout-btn:hover { background:rgba(6,182,212,.15); border-color:rgba(6,182,212,.3); color:#67e8f9; }
 
   /* Body layout */
@@ -466,8 +534,14 @@ const STYLES = `
   .kb-textarea { width:100%; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); border-radius:8px; padding:10px 12px; color:#e8e6f0; font-size:12px; font-family:'Syne',sans-serif; resize:vertical; outline:none; min-height:90px; transition:border-color .2s; }
   .kb-textarea::placeholder { color:rgba(255,255,255,.2); }
   .kb-textarea:focus { border-color:rgba(14,165,233,.5); }
+  .kb-file-upload-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+  .kb-file-input { position:absolute; width:0; height:0; opacity:0; pointer-events:none; }
+  .kb-upload-file-btn { padding:8px 12px; background:rgba(14,165,233,.2); border:1px dashed rgba(14,165,233,.5); border-radius:8px; color:#7dd3fc; font-size:12px; font-family:'Inter',sans-serif; font-weight:600; cursor:pointer; transition:all .2s; }
+  .kb-upload-file-btn:hover:not(:disabled) { background:rgba(14,165,233,.3); border-color:rgba(14,165,233,.7); }
+  .kb-upload-file-btn:disabled { opacity:.6; cursor:not-allowed; }
+  .kb-divider { font-size:11px; color:rgba(255,255,255,.4); margin:8px 0; text-align:center; }
   .kb-actions { display:flex; gap:8px; align-items:center; }
-  .kb-upload-btn { flex:1; padding:9px 12px; background:linear-gradient(135deg,#0ea5e9,#0284c7); border:none; border-radius:8px; color:white; font-size:12px; font-family:'Syne',sans-serif; font-weight:700; cursor:pointer; transition:all .2s; }
+  .kb-upload-btn { flex:1; padding:9px 12px; background:linear-gradient(135deg,#0ea5e9,#0284c7); border:none; border-radius:8px; color:white; font-size:12px; font-family:'Inter',sans-serif; font-weight:700; cursor:pointer; transition:all .2s; }
   .kb-upload-btn:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 4px 16px rgba(14,165,233,.4); }
   .kb-upload-btn:disabled { opacity:.5; cursor:not-allowed; }
   .kb-refresh-btn { padding:8px 10px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-radius:8px; color:rgba(255,255,255,.5); font-size:14px; cursor:pointer; transition:all .2s; }

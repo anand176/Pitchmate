@@ -134,6 +134,28 @@ export async function apiUploadDocument(text, sourceName = "uploaded_doc") {
 }
 
 /**
+ * Upload a PDF or DOCX file to the knowledge base. Text is extracted server-side and stored.
+ * @param {File} file - PDF or DOCX file
+ * @param {string} [sourceName] - Optional label (defaults to filename without extension)
+ * @returns {{ status: string, chunks_stored: number, source_name: string }}
+ */
+export async function apiUploadDocumentFile(file, sourceName = null) {
+    const token = await getToken();
+    if (!token) throw new Error("Not authenticated");
+    const form = new FormData();
+    form.append("file", file);
+    if (sourceName) form.append("source_name", sourceName);
+    const res = await fetch(`${BACKEND}/knowledge-base/upload-file`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: form,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data?.detail || `Upload failed (${res.status})`);
+    return data;
+}
+
+/**
  * List all documents stored in the knowledge base.
  * @returns {{ documents: { file_name: string, count: number }[] }}
  */
@@ -168,6 +190,28 @@ export async function apiSaveContext(context, sessionId = null) {
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data?.detail || `Save failed (${res.status})`);
     return data; // { context, message, session_id? }
+}
+
+/**
+ * Save startup context from an uploaded PDF or DOCX file for the current chat session.
+ * @param {File} file - PDF or DOCX file
+ * @param {string|null} sessionId - Current chat session id (optional)
+ * @returns {{ context: string, message: string, session_id?: string }}
+ */
+export async function apiSaveContextFromFile(file, sessionId = null) {
+    const token = await getToken();
+    if (!token) throw new Error("Not authenticated");
+    const form = new FormData();
+    form.append("file", file);
+    if (sessionId) form.append("session_id", sessionId);
+    const res = await fetch(`${BACKEND}/agents/context/upload-file`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: form,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data?.detail || `Upload failed (${res.status})`);
+    return data;
 }
 
 /**

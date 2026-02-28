@@ -3,16 +3,22 @@ Startup context router — stores and retrieves startup idea per chat session.
 
 Context is kept in the session only (in-memory), not in the database.
 It is automatically prepended to every agent query for that session in agents/backend.py.
+
+Endpoints:
+  POST /agents/context         — save context from JSON body
+  POST /agents/context/upload-file — save context from uploaded PDF or DOCX file
+  GET  /agents/context         — get context for session_id
 """
 
 import uuid
 from typing import Annotated, Optional
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from pydantic import BaseModel
 import logging
 
 from auth.dependencies import get_current_user
 from agents.session_context import set_session_context, get_session_context
+from knowledge_base.router import _extract_text_from_file
 
 logger = logging.getLogger("context_router")
 router = APIRouter(prefix="/agents/context", tags=["Context"])
@@ -43,6 +49,42 @@ async def save_context(
         context=req.context.strip(),
         message="Context saved for this chat session",
         session_id=session_id,
+    )
+
+
+@router.post("/upload-file", response_model=ContextResponse)
+async def save_context_from_file(
+    file: Annotated[UploadFile, File()],
+    current_user: Annotated[dict, Depends(get_current_user)],
+    session_id: Annotated[Optional[str], Form()] = None,
+):
+    """Save startup context from an uploaded PDF or DOCX. Extract text and store for this chat session."""
+    fn = (file.filename or "").strip().lower()
+    if not fn.endswith(".pdf") and not fn.endswith(".docx"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only PDF and DOCX files are allowed.",
+        )
+    content = await file.read()
+    if not content:
+        raise HTTPException(status_code=400, detail="File is empty.")
+    try:
+        text = _extract_text_from_file(content, fn)
+    except Exception as exc:
+        logger.warning(f"Extract text from file failed: {exc}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Could not extract text from file: {exc}",
+        ) from exc
+    if not (text or "").strip():
+        raise HTTPException(status_code=400, detail="No text could be extracted from the file.")
+    sid = session_id or str(uuid.uuid4())
+    set_session_context(sid, text.strip())
+    logger.info(f"Saved startup context from file for session {sid} (user {current_user['id']})")
+    return ContextResponse(
+        context=text.strip(),
+        message="Context saved from file for this chat session",
+        session_id=sid,
     )
 
 
