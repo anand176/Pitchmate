@@ -1,13 +1,16 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { apiPitchmate, apiLogout, apiUploadDocument, apiListDocuments, apiSaveContext, apiGetContext } from "./pitchmateApi";
+import { apiPitchmate, apiLogout, apiUploadDocument, apiListDocuments, apiSaveContext, apiGetContext, apiDownloadArtifact } from "./pitchmateApi";
 
 const STARTER_PROMPTS = [
     "Help me validate my product idea",
     "Write me a 60-second elevator pitch",
+    "What questions will investors ask me?",
     "Review my pitch deck problem slide",
     "How do I approach seed investors?",
     "What's my go-to-market strategy?",
     "Draft an investor outreach email",
+    "Prepare me for investor meetings",
+    "Create a deck / report for my product",
 ];
 
 const AGENT_STEPS = [
@@ -17,9 +20,17 @@ const AGENT_STEPS = [
     { id: "respond", label: "Generating advice" },
 ];
 
+function escapeHtmlUrl(url) {
+    return String(url)
+        .replace(/&/g, "&amp;")
+        .replace(/"/g, "&quot;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+}
+
 function formatMessage(text) {
     if (typeof text !== "string") return "";
-    return text
+    let out = text
         .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
         .replace(/\*(.*?)\*/g, "<em>$1</em>")
         .replace(/`(.*?)`/g, '<code style="background:rgba(14,165,233,0.15);padding:1px 5px;border-radius:4px;font-size:12px;">$1</code>')
@@ -28,8 +39,14 @@ function formatMessage(text) {
         .replace(/^#{1}\s(.+)$/gm, '<h2 style="font-size:16px;font-weight:800;color:#e8e6f0;margin:14px 0 8px;">$1</h2>')
         .replace(/^[-•]\s(.+)$/gm, '<div style="display:flex;gap:8px;margin:3px 0;"><span style="color:#0ea5e9;flex-shrink:0;">▸</span><span>$1</span></div>')
         .replace(/\[(HOOK|PROBLEM|SOLUTION|TRACTION|ASK|✅|⚠️|💡|📊|🏆)\]/g,
-            '<span style="display:inline-block;padding:1px 8px;background:rgba(6,182,212,0.2);border:1px solid rgba(6,182,212,0.35);border-radius:4px;color:#67e8f9;font-size:11px;font-weight:600;margin:0 2px;">$1</span>')
-        .replace(/\n/g, "<br/>");
+            '<span style="display:inline-block;padding:1px 8px;background:rgba(6,182,212,0.2);border:1px solid rgba(6,182,212,0.35);border-radius:4px;color:#67e8f9;font-size:11px;font-weight:600;margin:0 2px;">$1</span>');
+    out = out.replace(/https?:\/\/[^\s<>"')\]]+/g, (url) => {
+        const safe = escapeHtmlUrl(url);
+        const isDrawio = /diagrams\.net|draw\.io/i.test(url);
+        const label = isDrawio ? "View drawing" : "Open link";
+        return `<a href="${safe}" target="_blank" rel="noopener noreferrer" class="pm-msg-link">${label}</a>`;
+    });
+    return out.replace(/\n/g, "<br/>");
 }
 
 // ─── Panel: Share Your Idea (plain text context, scoped to this chat session) ───
@@ -307,17 +324,60 @@ export default function PitchMateAgent({ user }) {
                             </div>
                         )}
 
-                        {messages.map((msg, i) => (
-                            <div key={i} className={`pm-message ${msg.role}`}>
-                                <div className={`pm-avatar ${msg.role === "assistant" ? "ai" : "user-av"}`}>
-                                    {msg.role === "assistant" ? <span style={{ fontWeight: 800, fontSize: 13 }}>P</span> : userInitial}
+                        {messages.map((msg, i) => {
+                            let downloadMatches = [];
+                            let drawingUrl = null;
+                            if (msg.role === "assistant" && typeof msg.content === "string") {
+                                const fromLabel = [...(msg.content.matchAll(/Download:\s*([^\s]+\.(?:pdf|txt|docx))/gi) || [])].map(m => m[1]);
+                                const fromFilename = [...(msg.content.matchAll(/(deck_[^\s]+\.(?:pdf|docx)|executive_summary_[^\s]+\.pdf|due_diligence_qa_[^\s]+\.pdf|elevator_pitch_[^\s]+\.txt)/gi) || [])].map(m => m[1]);
+                                const seen = new Set();
+                                downloadMatches = [...fromLabel, ...fromFilename].filter(f => {
+                                    if (seen.has(f)) return false;
+                                    seen.add(f);
+                                    return true;
+                                });
+                                const urlMatch = msg.content.match(/https?:\/\/[^\s<>"')\]]+/);
+                                if (urlMatch && /diagrams\.net|draw\.io/i.test(urlMatch[0])) drawingUrl = urlMatch[0];
+                            }
+                            return (
+                                <div key={i} className={`pm-message ${msg.role}`}>
+                                    <div className={`pm-avatar ${msg.role === "assistant" ? "ai" : "user-av"}`}>
+                                        {msg.role === "assistant" ? <span style={{ fontWeight: 800, fontSize: 13 }}>P</span> : userInitial}
+                                    </div>
+                                    <div className="pm-bubble-wrap">
+                                        <div
+                                            className={`pm-bubble ${msg.role === "assistant" ? "ai" : "user"} ${msg.isError ? "err" : ""}`}
+                                            dangerouslySetInnerHTML={{ __html: msg.role === "assistant" ? formatMessage(msg.content) : msg.content }}
+                                        />
+                                        {downloadMatches.length > 0 && (
+                                            <div className="pm-download-row">
+                                                {downloadMatches.map((filename, j) => (
+                                                    <button
+                                                        key={j}
+                                                        type="button"
+                                                        className="pm-download-btn"
+                                                        onClick={() => apiDownloadArtifact(filename).catch(e => alert(e.message))}
+                                                    >
+                                                        {filename.endsWith(".pdf") ? "📄 Download PDF" : filename.endsWith(".docx") ? "📄 Download DOCX" : "📥 Download"}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                        {drawingUrl && (
+                                            <div className="pm-download-row">
+                                                <button
+                                                    type="button"
+                                                    className="pm-download-btn pm-view-drawing-btn"
+                                                    onClick={() => window.open(drawingUrl, "_blank", "noopener,noreferrer")}
+                                                >
+                                                    🎨 View drawing
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                                <div
-                                    className={`pm-bubble ${msg.role === "assistant" ? "ai" : "user"} ${msg.isError ? "err" : ""}`}
-                                    dangerouslySetInnerHTML={{ __html: msg.role === "assistant" ? formatMessage(msg.content) : msg.content }}
-                                />
-                            </div>
-                        ))}
+                            );
+                        })}
 
                         {loading && (
                             <div className="pm-agent-steps">
@@ -453,6 +513,13 @@ const STYLES = `
   .pm-bubble.user { background:linear-gradient(135deg,rgba(14,165,233,.25),rgba(14,165,233,.15)); border:1px solid rgba(14,165,233,.25); border-top-right-radius:4px; }
   .pm-bubble.err { background:rgba(255,60,60,.08); border-color:rgba(255,60,60,.2); color:#ff8a8a; }
   .pm-bubble.ai strong { color:#7dd3fc; }
+  .pm-bubble-wrap { max-width:80%; display:flex; flex-direction:column; gap:8px; }
+  .pm-download-row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  .pm-download-btn { padding:8px 14px; background:rgba(14,165,233,.2); border:1px solid rgba(14,165,233,.4); border-radius:8px; color:#7dd3fc; font-size:12px; font-family:'Inter',sans-serif; font-weight:600; cursor:pointer; transition:all .2s; }
+  .pm-download-btn:hover { background:rgba(14,165,233,.3); border-color:rgba(14,165,233,.5); color:#e8e6f0; }
+  .pm-msg-link { color:#7dd3fc; text-decoration:underline; }
+  .pm-msg-link:hover { color:#bae6fd; }
+  .pm-view-drawing-btn { color:inherit; text-decoration:none; }
 
   .pm-agent-steps { display:flex; flex-direction:column; gap:8px; padding:14px 16px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06); border-radius:14px; border-top-left-radius:4px; max-width:76%; margin-left:46px; animation:fadeUp .3s ease; }
   .pm-step { display:flex; align-items:center; gap:10px; font-family:'DM Mono',monospace; font-size:11px; color:rgba(255,255,255,.25); transition:all .3s; }

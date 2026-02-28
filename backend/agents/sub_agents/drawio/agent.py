@@ -11,7 +11,8 @@ from core.config import config
 
 # Use npx.cmd on Windows for reliable subprocess spawning
 _NPX_CMD = "npx.cmd" if sys.platform == "win32" else "npx"
-_MCP_TIMEOUT = float(getattr(config.mcp, "connection_timeout", 60))
+_mcp_config = getattr(config, "mcp", None)
+_MCP_TIMEOUT = float(getattr(_mcp_config, "connection_timeout", 60) if _mcp_config is not None else 60)
 
 drawio_mcp = McpToolset(
     connection_params=StdioConnectionParams(
@@ -26,7 +27,7 @@ drawio_mcp = McpToolset(
 drawio_agent = Agent(
     name="drawio_agent",
     model=config.agents.get_model_for_agent("drawio_agent"),
-    description="Creates and opens diagrams in the draw.io editor. Supports Mermaid.js, CSV (org charts, flowcharts), and draw.io XML. Use when the user asks to create, view, or edit diagrams.",
+    description="Creates and opens diagrams/drawings in the draw.io editor. Use mainly when the user asks for drawings, diagrams, flowcharts, org charts, Mermaid diagrams, or similar visuals. Supports Mermaid.js, CSV (org charts, flowcharts), and draw.io XML.",
     instruction=prompt.INSTRUCTION,
     tools=[drawio_mcp],
     generate_content_config=genai_types.GenerateContentConfig(

@@ -14,8 +14,10 @@ from agents.sub_agents import (
     knowledge_base_agent,
     figma_mcp_agent,
     browse_mcp_agent,
-    drawio_mcp_agent,
+    drawio_agent,
     pitch_writer_agent,
+    due_diligence_agent,
+    deck_creator_agent,
 )
 from core.config import config
 
@@ -31,8 +33,10 @@ pitchmate_agent = Agent(
         AgentTool(agent=knowledge_base_agent, skip_summarization=False),
         AgentTool(agent=figma_mcp_agent, skip_summarization=False),
         AgentTool(agent=browse_mcp_agent, skip_summarization=False),
-        AgentTool(agent=drawio_mcp_agent, skip_summarization=False),
+        AgentTool(agent=drawio_agent, skip_summarization=False),
         AgentTool(agent=pitch_writer_agent, skip_summarization=False),
+        AgentTool(agent=due_diligence_agent, skip_summarization=False),
+        AgentTool(agent=deck_creator_agent, skip_summarization=False),
     ],
     generate_content_config=genai_types.GenerateContentConfig(
         temperature=0.3,

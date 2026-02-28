@@ -91,8 +91,7 @@ def create_executive_summary_pdf(
             story.append(Paragraph(block_escaped.replace("\n", "<br/>"), body_style))
 
         doc.build(story)
-        abs_path = os.path.abspath(filepath)
-        return f"Executive summary PDF created: {abs_path}"
+        return f"Executive summary PDF created. Download: {filename}"
     except Exception as e:
         return f"PDF creation failed: {str(e)}"
 

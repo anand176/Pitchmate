@@ -86,6 +86,32 @@ export async function apiHealth() {
     return res.ok;
 }
 
+/**
+ * Download an artifact file (e.g. due diligence Q&A PDF, executive summary PDF) by filename.
+ * Fetches with auth and triggers browser download.
+ * @param {string} filename - Filename only (e.g. due_diligence_qa_Company_20250228_123456.pdf)
+ * @param {string} [downloadAs] - Optional name for the saved file (defaults to filename)
+ */
+export async function apiDownloadArtifact(filename, downloadAs = null) {
+    const token = await getToken();
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    const res = await fetch(`${BACKEND}/agents/artifacts/download/${encodeURIComponent(filename)}`, {
+        method: "GET",
+        headers,
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.detail || `Download failed (${res.status})`);
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = downloadAs || filename;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
 // ─── Knowledge Base ───────────────────────────────────────────────────────────
 
 /**

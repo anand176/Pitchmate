@@ -1,14 +1,17 @@
 """
-Agents router — Pitchmate AI co-pilot endpoint.
+Agents router — Pitchmate AI co-pilot endpoint and artifact download.
 """
 
+import os
 from typing import Optional, Annotated
 from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import logging
 
 from auth.dependencies import get_current_user
 from agents.session_context import get_session_context
+from core.config import config
 
 logger = logging.getLogger("agents_backend")
 logger.setLevel(logging.INFO)
@@ -81,3 +84,34 @@ async def pitchmate(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to process request: {str(e)}",
         )
+
+
+def _safe_artifact_filename(name: str) -> bool:
+    """Allow only simple filenames (no path traversal)."""
+    if not name or ".." in name or os.path.sep in name or "/" in name or "\\" in name:
+        return False
+    return name.endswith((".pdf", ".txt", ".docx"))
+
+
+@router.get("/artifacts/download/{filename}")
+async def download_artifact(
+    filename: str,
+    current_user: Annotated[dict, Depends(get_current_user)],
+):
+    """
+    Download an artifact file (e.g. due diligence Q&A PDF, executive summary PDF) by filename.
+    Files are stored in the artifacts directory. Only .pdf and .txt are allowed.
+    """
+    if not _safe_artifact_filename(filename):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid filename")
+    root = config.artifacts_root_dir
+    filepath = os.path.join(root, filename)
+    if not os.path.isfile(filepath):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
+    if filename.lower().endswith(".pdf"):
+        media_type = "application/pdf"
+    elif filename.lower().endswith(".docx"):
+        media_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    else:
+        media_type = "text/plain"
+    return FileResponse(filepath, filename=filename, media_type=media_type)
