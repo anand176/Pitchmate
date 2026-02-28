@@ -77,18 +77,18 @@ export default function PitchMateAuth() {
             {/* Background orbs */}
             <div style={{
                 position: "fixed", top: "-20%", left: "-15%", width: "55%", height: "55%",
-                background: "radial-gradient(ellipse, rgba(99,60,255,0.18) 0%, transparent 70%)",
+                background: "radial-gradient(ellipse, rgba(14,165,233,0.18) 0%, transparent 70%)",
                 animation: "orb1 12s ease-in-out infinite", pointerEvents: "none", zIndex: 0
             }} />
             <div style={{
                 position: "fixed", bottom: "-25%", right: "-10%", width: "50%", height: "50%",
-                background: "radial-gradient(ellipse, rgba(255,90,60,0.12) 0%, transparent 70%)",
+                background: "radial-gradient(ellipse, rgba(6,182,212,0.12) 0%, transparent 70%)",
                 animation: "orb2 15s ease-in-out infinite", pointerEvents: "none", zIndex: 0
             }} />
             <div style={{
                 position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none",
-                backgroundImage: `linear-gradient(rgba(99,60,255,0.04) 1px, transparent 1px),
-                         linear-gradient(90deg, rgba(99,60,255,0.04) 1px, transparent 1px)`,
+                backgroundImage: `linear-gradient(rgba(14,165,233,0.04) 1px, transparent 1px),
+                         linear-gradient(90deg, rgba(14,165,233,0.04) 1px, transparent 1px)`,
                 backgroundSize: "60px 60px"
             }} />
 
@@ -115,7 +115,7 @@ export default function PitchMateAuth() {
                         <div style={S.pills}>
                             {["Deck slide review & scoring", "Market size validation", "Go-to-market strategy", "Investor outreach emails"].map((t, i) => (
                                 <div key={i} style={{ ...S.pill, animationDelay: `${i * 0.1}s` }}>
-                                    <span style={{ color: "rgba(99,255,155,0.7)", fontSize: 12 }}>✓</span>
+                                    <span style={{ color: "rgba(103,232,249,0.9)", fontSize: 12 }}>✓</span>
                                     <span style={S.pillText}>{t}</span>
                                 </div>
                             ))}
@@ -294,16 +294,16 @@ const CSS = `
   @keyframes orb1 { 0%,100% { transform:translate(0,0) scale(1); } 33% { transform:translate(30px,-20px) scale(1.1); } 66% { transform:translate(-20px,15px) scale(.95); } }
   @keyframes orb2 { 0%,100% { transform:translate(0,0) scale(1); } 33% { transform:translate(-25px,20px) scale(1.05); } 66% { transform:translate(15px,-25px) scale(1.1); } }
   @keyframes successPop { 0% { transform:scale(.8); opacity:0; } 60% { transform:scale(1.1); } 100% { transform:scale(1); opacity:1; } }
-  .particle { position:absolute; border-radius:50%; background:rgba(99,60,255,.5); animation:floatUp linear infinite; pointer-events:none; }
+  .particle { position:absolute; border-radius:50%; background:rgba(14,165,233,.5); animation:floatUp linear infinite; pointer-events:none; }
   .auth-input { width:100%; background:rgba(255,255,255,.04); border:1.5px solid rgba(255,255,255,.09); border-radius:14px; padding:14px 18px; color:#e8e6f0; font-family:'Syne',sans-serif; font-size:14px; outline:none; transition:border-color .25s,background .25s,box-shadow .25s; }
   .auth-input::placeholder { color:rgba(255,255,255,.22); }
-  .auth-input:focus { border-color:rgba(99,60,255,.6); background:rgba(99,60,255,.07); box-shadow:0 0 0 3px rgba(99,60,255,.12); }
-  .submit-btn { width:100%; padding:15px; border:none; border-radius:14px; background:linear-gradient(135deg,#633cff 0%,#4a2acc 50%,#ff5a3c 100%); background-size:200% 200%; color:white; font-family:'Syne',sans-serif; font-size:15px; font-weight:700; cursor:pointer; transition:transform .2s,box-shadow .2s; position:relative; overflow:hidden; }
-  .submit-btn:hover { transform:translateY(-2px); box-shadow:0 8px 30px rgba(99,60,255,.4); }
+  .auth-input:focus { border-color:rgba(14,165,233,.6); background:rgba(14,165,233,.07); box-shadow:0 0 0 3px rgba(14,165,233,.12); }
+  .submit-btn { width:100%; padding:15px; border:none; border-radius:14px; background:linear-gradient(135deg,#0ea5e9 0%,#0284c7 50%,#06b6d4 100%); background-size:200% 200%; color:white; font-family:'Syne',sans-serif; font-size:15px; font-weight:700; cursor:pointer; transition:transform .2s,box-shadow .2s; position:relative; overflow:hidden; }
+  .submit-btn:hover { transform:translateY(-2px); box-shadow:0 8px 30px rgba(14,165,233,.4); }
   .submit-btn:active { transform:translateY(0); }
   .submit-btn::after { content:''; position:absolute; inset:0; background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent); background-size:200% 100%; animation:shimmer 2s infinite; }
   .tab { flex:1; padding:10px; background:none; border:none; color:rgba(255,255,255,.35); font-family:'Syne',sans-serif; font-size:14px; font-weight:600; cursor:pointer; border-radius:10px; transition:all .2s; }
-  .tab.active { color:#e8e6f0; background:rgba(99,60,255,.2); }
+  .tab.active { color:#e8e6f0; background:rgba(14,165,233,.2); }
   .field-wrap { position:relative; }
   .field-icon { position:absolute; right:16px; top:50%; transform:translateY(-50%); color:rgba(255,255,255,.2); font-size:16px; transition:color .2s; pointer-events:none; }
   .success-overlay { position:absolute; inset:0; background:rgba(10,10,15,.95); border-radius:24px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; animation:successPop .4s ease; z-index:20; }
@@ -314,30 +314,30 @@ const S = {
     layout: { display: "flex", width: "100%", minHeight: "100vh", position: "relative", zIndex: 5 },
     leftPanel: { flex: "1.1", padding: "48px 56px", display: "flex", flexDirection: "column", justifyContent: "center", position: "relative", overflow: "hidden", borderRight: "1px solid rgba(255,255,255,.06)" },
     logo: { display: "flex", alignItems: "center", gap: 12, marginBottom: 64, animation: "fadeSlideUp .5s ease" },
-    logoMark: { width: 40, height: 40, background: "linear-gradient(135deg,#633cff,#ff5a3c)", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: 800, color: "white" },
-    logoText: { fontSize: 20, fontWeight: 800, letterSpacing: "-0.5px", background: "linear-gradient(90deg,#e8e6f0,#9b8cff)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" },
+    logoMark: { width: 40, height: 40, background: "linear-gradient(135deg,#0ea5e9,#06b6d4)", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: 800, color: "white" },
+    logoText: { fontSize: 20, fontWeight: 800, letterSpacing: "-0.5px", background: "linear-gradient(90deg,#e8e6f0,#38bdf8)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" },
     heroText: { marginBottom: 48, animation: "fadeSlideUp .5s ease .1s both" },
-    badge: { display: "inline-block", padding: "6px 14px", background: "rgba(99,60,255,.15)", border: "1px solid rgba(99,60,255,.3)", borderRadius: 100, fontSize: 12, fontFamily: "'DM Mono',monospace", color: "#9b8cff", marginBottom: 20, letterSpacing: "0.5px" },
+    badge: { display: "inline-block", padding: "6px 14px", background: "rgba(14,165,233,.15)", border: "1px solid rgba(14,165,233,.3)", borderRadius: 100, fontSize: 12, fontFamily: "'DM Mono',monospace", color: "#38bdf8", marginBottom: 20, letterSpacing: "0.5px" },
     headline: { fontSize: 52, fontWeight: 800, lineHeight: 1.1, letterSpacing: "-2px", marginBottom: 20 },
-    gradientText: { background: "linear-gradient(135deg,#633cff,#ff5a3c)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" },
+    gradientText: { background: "linear-gradient(135deg,#0ea5e9,#06b6d4)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" },
     subtext: { fontSize: 15, color: "rgba(255,255,255,.45)", lineHeight: 1.7, maxWidth: 360 },
     pills: { display: "flex", flexDirection: "column", gap: 10, marginBottom: 48, animation: "fadeSlideUp .5s ease .2s both" },
     pill: { display: "inline-flex", alignItems: "center", gap: 10, padding: "10px 16px", background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.07)", borderRadius: 12, fontSize: 13, width: "fit-content", animation: "fadeSlideIn .4s ease both" },
     pillText: { color: "rgba(255,255,255,.6)" },
     testimonial: { display: "flex", alignItems: "center", gap: 14, padding: "16px 20px", background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.07)", borderRadius: 16, animation: "fadeSlideUp .5s ease .3s both" },
-    avatar: { width: 40, height: 40, background: "linear-gradient(135deg,#633cff,#ff5a3c)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "white", flexShrink: 0 },
+    avatar: { width: 40, height: 40, background: "linear-gradient(135deg,#0ea5e9,#06b6d4)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "white", flexShrink: 0 },
     quote: { fontSize: 13, color: "rgba(255,255,255,.7)", lineHeight: 1.5, marginBottom: 4 },
     quoteAuthor: { fontSize: 11, fontFamily: "'DM Mono',monospace", color: "rgba(255,255,255,.3)" },
-    ring: { position: "absolute", right: -200, top: "50%", transform: "translateY(-50%)", width: 500, height: 500, border: "1px solid rgba(99,60,255,.08)", borderRadius: "50%", pointerEvents: "none" },
+    ring: { position: "absolute", right: -200, top: "50%", transform: "translateY(-50%)", width: 500, height: 500, border: "1px solid rgba(14,165,233,.08)", borderRadius: "50%", pointerEvents: "none" },
     rightPanel: { flex: "0.9", display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 40px" },
     card: { width: "100%", maxWidth: 420, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 24, padding: "36px", backdropFilter: "blur(20px)", position: "relative", overflow: "hidden" },
     tabs: { display: "flex", gap: 6, marginBottom: 28, background: "rgba(255,255,255,.04)", padding: 5, borderRadius: 14 },
     cardTitle: { fontSize: 22, fontWeight: 800, letterSpacing: "-0.5px", marginBottom: 6 },
     cardSub: { fontSize: 13, color: "rgba(255,255,255,.4)", fontFamily: "'DM Mono',monospace" },
     label: { display: "block", fontSize: 12, fontFamily: "'DM Mono',monospace", color: "rgba(255,255,255,.4)", marginBottom: 8, letterSpacing: "0.3px" },
-    forgotLink: { fontSize: 12, color: "rgba(99,60,255,.8)", textDecoration: "none", fontFamily: "'DM Mono',monospace" },
+    forgotLink: { fontSize: 12, color: "rgba(14,165,233,.9)", textDecoration: "none", fontFamily: "'DM Mono',monospace" },
     terms: { fontSize: 11, color: "rgba(255,255,255,.3)", fontFamily: "'DM Mono',monospace", lineHeight: 1.6 },
-    link: { color: "rgba(99,60,255,.8)", textDecoration: "none" },
+    link: { color: "rgba(14,165,233,.9)", textDecoration: "none" },
     switchText: { marginTop: 24, textAlign: "center", fontSize: 13, color: "rgba(255,255,255,.35)", fontFamily: "'DM Mono',monospace" },
-    switchLink: { color: "#9b8cff", cursor: "pointer", fontWeight: 600 },
+    switchLink: { color: "#38bdf8", cursor: "pointer", fontWeight: 600 },
 };
