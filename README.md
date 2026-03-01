@@ -8,11 +8,15 @@
 
 | Agent | Capability |
 |-------|-----------|
-| **Deck Reviewer** | Slide-by-slide feedback + overall deck scoring |
-| **Market Validator** | Market size validation + competition assessment |
-| **Market Strategist** | GTM strategy + customer segments + pricing |
-| **Investor Outreacher** | Investor type matching + cold email drafts |
-| **Knowledge Base** | Upload your context → semantic search via pgvector |
+| **Market Agent** | TAM/SAM/SOM validation, competition assessment, GTM strategy, ICP, channels & pricing |
+| **Investor Outreacher** | Investor type matching + personalized cold email drafts |
+| **Knowledge Base** | Upload docs (PDF/DOCX or paste) → semantic search; **reviews & analyses pitch decks** |
+| **Browse MCP** | Web search + **news** for market data, competitors, industry trends |
+| **Draw.io Agent** | Diagrams, flowcharts, org charts, Mermaid, business model canvas, GTM funnel |
+| **Pitch Writer** | Elevator pitch (30–60 sec) + one-page executive summary (PDF) |
+| **Due Diligence** | Anticipates investor questions, red flags, Q&A prep → **downloadable Q&A PDF** |
+| **Deck Creator** | Pitch deck / product report as **PDF or DOCX** (Problem, Solution, Market, Product, Traction, GTM, Competition) |
+| **Figma Design (MCP)** | Visual design review of Figma deck files — layout, hierarchy, typography, slide-level feedback |
 
 ---
 
