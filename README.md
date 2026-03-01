@@ -94,7 +94,8 @@ npm run dev
 
 ### 3. Chat Example
 
-<img width="1904" height="857" alt="image" src="https://github.com/user-attachments/assets/c123ad9a-32c9-43b2-a9d4-e487a4177201" />
+<img width="1919" height="863" alt="image" src="https://github.com/user-attachments/assets/cb705387-61da-49b5-ac87-e11c69c9d455" />
+
 
 
 
