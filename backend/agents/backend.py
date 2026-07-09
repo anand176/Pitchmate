@@ -61,14 +61,11 @@ async def pitchmate(
         logger.info(f"Injected session context ({len(startup_context)} chars) for session {req.session_id}")
 
     try:
-        from agents.agent_runner import handle_agent_request
-        from agents.agent import pitchmate_agent
+        from agents.agent_runner import handle_pitchmate_request
 
-        response, actual_session_id = await handle_agent_request(
+        response, actual_session_id = await handle_pitchmate_request(
             user_id=user_id,
             query=enriched_query,
-            agent=pitchmate_agent,
-            app_name="pitchmate_app",
             session_id=req.session_id,
         )
 

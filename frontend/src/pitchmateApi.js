@@ -3,19 +3,17 @@
  * ---------------
  * All calls to the FastAPI backend (http://localhost:8000 in dev via Vite proxy).
  *
- * Every protected call reads the Supabase JWT from the current session and
- * attaches it as a Bearer token in the Authorization header.
+ * Every protected call reads Pitchmate's own JWT (issued by /auth/signup or
+ * /auth/login, persisted in localStorage via authClient.js) and attaches it
+ * as a Bearer token in the Authorization header.
  */
 
-import { supabase } from "./supabaseClient";
+import { getStoredAuth, setStoredAuth, clearStoredAuth } from "./authClient";
 
 const BACKEND = import.meta.env.VITE_BACKEND_URL || ""; // empty → Vite proxy in dev
 
 async function getToken() {
-    const {
-        data: { session },
-    } = await supabase.auth.getSession();
-    return session?.access_token ?? null;
+    return getStoredAuth()?.access_token ?? null;
 }
 
 async function authHeaders() {
@@ -28,7 +26,7 @@ async function authHeaders() {
 
 // ─── Auth ────────────────────────────────────────────────────────────────────
 
-/** Sign up via FastAPI /auth/signup */
+/** Sign up via FastAPI /auth/signup. Persists the returned token so the caller is immediately signed in. */
 export async function apiSignup(email, password, fullName = "") {
     const res = await fetch(`${BACKEND}/auth/signup`, {
         method: "POST",
@@ -37,10 +35,11 @@ export async function apiSignup(email, password, fullName = "") {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data?.detail || `Signup failed (${res.status})`);
+    setStoredAuth(data);
     return data; // { access_token, user_id, email }
 }
 
-/** Login via FastAPI /auth/login */
+/** Login via FastAPI /auth/login. Persists the returned token so the caller is immediately signed in. */
 export async function apiLogin(email, password) {
     const res = await fetch(`${BACKEND}/auth/login`, {
         method: "POST",
@@ -49,14 +48,19 @@ export async function apiLogin(email, password) {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data?.detail || `Login failed (${res.status})`);
+    setStoredAuth(data);
     return data; // { access_token, user_id, email }
 }
 
-/** Logout via FastAPI /auth/logout */
+/** Logout via FastAPI /auth/logout (best-effort — tokens are stateless) and clear the local session. */
 export async function apiLogout() {
-    const headers = await authHeaders();
-    await fetch(`${BACKEND}/auth/logout`, { method: "POST", headers });
-    await supabase.auth.signOut(); // also clear local Supabase session
+    try {
+        const headers = await authHeaders();
+        await fetch(`${BACKEND}/auth/logout`, { method: "POST", headers });
+    } catch {
+        // best-effort; always clear local state below regardless
+    }
+    clearStoredAuth();
 }
 
 // ─── Pitchmate Agent ─────────────────────────────────────────────────────────
@@ -228,6 +232,55 @@ export async function apiGetContext(sessionId = null) {
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data?.detail || `Get failed (${res.status})`);
     return data; // { context }
+}
+
+// ─── Dashboard (structured, non-chat) endpoints ──────────────────────────────
+
+async function _postDashboard(path, body) {
+    const headers = await authHeaders();
+    const res = await fetch(`${BACKEND}/dashboard/${path}`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data?.detail || `Request failed (${res.status})`);
+    return data;
+}
+
+/** Validate TAM/SAM/SOM claims. @returns MarketSizeResult */
+export function apiDashboardMarket({ tam, sam, som, description }) {
+    return _postDashboard("market", { tam, sam, som, description });
+}
+
+/** Evaluate the competitive landscape. @returns CompetitionResult */
+export function apiDashboardCompetition({ competitors, description }) {
+    return _postDashboard("competition", { competitors, description });
+}
+
+/** Build a phased go-to-market plan. @returns GTMResult */
+export function apiDashboardGTM({ product_description, target_market }) {
+    return _postDashboard("gtm", { product_description, target_market });
+}
+
+/** Suggest investor types/tiers for a stage and industry. @returns InvestorResult */
+export function apiDashboardInvestors({ stage, industry }) {
+    return _postDashboard("investors", { stage, industry });
+}
+
+/** Estimate a pre-money valuation range. @returns ValuationResult */
+export function apiDashboardValuation({ stage, sector, arr, growth_rate_yoy, team_strength, traction_strength }) {
+    return _postDashboard("valuation", { stage, sector, arr, growth_rate_yoy, team_strength, traction_strength });
+}
+
+/** Draft/polish structured pitch deck section copy. @returns DeckResult */
+export function apiDashboardDeck(sections) {
+    return _postDashboard("deck", sections);
+}
+
+/** Generate a PDF/DOCX deck artifact. @returns { filename, download_url } */
+export function apiDashboardDeckExport(sections, format = "pdf") {
+    return _postDashboard("deck/export", { ...sections, format });
 }
 
 

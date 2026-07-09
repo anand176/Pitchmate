@@ -30,7 +30,16 @@ def search_knowledge_base(query: str, top_k: int = 6) -> str:
     if not query or not str(query).strip():
         return "No search query provided. Please specify what you are looking for."
     try:
+        from core.mlflow_tracking import log_metric, log_params, mlflow_is_active
+
         documents = _query_vectors(str(query).strip(), top_k=min(top_k, 10))
+        if mlflow_is_active():
+            log_params({"kb_query_length": len(str(query)), "kb_top_k": min(top_k, 10)})
+            log_metric("kb_results_count", len(documents))
+            if documents:
+                scores = [d.get("score") for d in documents if d.get("score") is not None]
+                if scores:
+                    log_metric("kb_top_score", max(scores))
     except RuntimeError as e:
         return (
             "Knowledge base (Supabase pgvector) is not available. "

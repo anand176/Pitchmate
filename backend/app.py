@@ -15,9 +15,34 @@ async def lifespan(app: FastAPI):
     """Application lifespan — startup and shutdown hooks."""
     # Startup
     from core.supabase_client import get_supabase_client
-    get_supabase_client()  # initialise singleton on startup
+    get_supabase_client()  # initialise singleton on startup (still used by the knowledge base)
+
+    # Ensure the self-hosted auth database (users table) exists.
+    from db.base import init_db
+    await init_db()
+
+    # Optional MLflow tracking for agents, dashboard LLM calls, and KB ops.
+    from core.mlflow_tracking import init_mlflow
+    init_mlflow()
+
+    # Build the orchestrator with a real checkpointer (Postgres if DATABASE_URL
+    # is set, else in-memory) so multi-turn chat sessions actually persist.
+    # This must happen here (not at module import time) because checkpointer
+    # setup is async.
+    from agents.langgraph_runner import get_checkpointer, cache_agent
+    from agents.agent import build_pitchmate_agent
+
+    checkpointer = await get_checkpointer()
+    cache_agent("pitchmate_agent", build_pitchmate_agent(checkpointer=checkpointer))
+
     yield
-    # Shutdown (nothing to clean up for now)
+
+    # Shutdown
+    from agents.langgraph_runner import cleanup_checkpointer
+    await cleanup_checkpointer()
+
+    from db.base import close_db
+    await close_db()
 
 
 app = FastAPI(
@@ -45,11 +70,13 @@ from auth.router import router as auth_router                    # noqa: E402
 from agents.backend import router as agents_router              # noqa: E402
 from agents.context_router import router as context_router      # noqa: E402
 from knowledge_base.router import router as kb_router           # noqa: E402
+from dashboard.router import router as dashboard_router         # noqa: E402
 
 app.include_router(auth_router)
 app.include_router(agents_router)
 app.include_router(context_router)
 app.include_router(kb_router)
+app.include_router(dashboard_router)
 
 
 @app.get("/health", tags=["Health"])

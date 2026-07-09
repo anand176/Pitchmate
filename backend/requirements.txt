@@ -7,18 +7,22 @@ botbuilder-core==4.17.1
 celery[redis]==5.6.2
 email-validator==2.3.0
 fastapi[standard-no-fastapi-cloud-cli]==0.115.6
-google-adk==1.22.0
-google-generativeai==0.8.3
+langchain==0.3.15
+langchain-google-genai==2.0.8
+langgraph==0.2.63
+langgraph-checkpoint-postgres==2.0.12
 httpx==0.28.1
 instructor==1.14.1
 litellm==1.80.13
 markdown-pdf==1.10
-mcp==1.0.0
+mcp==1.26.0
 psycopg[binary,pool]==3.3.2
 pwdlib[argon2]==0.3.0
 pydantic_settings==2.12.0
 # Supabase — auth + pgvector knowledge base
-supabase==2.10.0
+# NOTE: must stay on a version that supports httpx>=0.28 (2.10.0 pinned
+# httpx<0.28 and conflicted with the httpx pin above during `pip install`).
+supabase==2.28.0
 # ML / embeddings (pinned to limit resolver depth)
 sentence-transformers==2.2.2
 docker==7.0.0
@@ -35,3 +39,8 @@ python-multipart==0.0.20
 slowapi==0.1.9
 SQLAlchemy==2.0.45
 google-search-results==2.4.2
+# Observability — agent/LLM run tracking (optional; set MLFLOW_ENABLED=true)
+mlflow==2.22.0
+# Test suite (backend/agents/test_migration.py)
+pytest==9.1.1
+pytest-asyncio==1.4.0

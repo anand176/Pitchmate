@@ -37,6 +37,8 @@ coverage/
 # ─── Generated / Artifacts ────────────────────────────────────────────────────
 artifacts/
 backend/artifacts/
+mlruns/
+backend/mlruns/
 generated_reports/
 backend/generated_reports/
 *.log

@@ -14,6 +14,7 @@ from fastapi import APIRouter, File, HTTPException, UploadFile, status, Depends
 from pydantic import BaseModel
 
 from auth.dependencies import get_current_user
+from core.mlflow_tracking import log_metric, log_params, track_run
 
 logger = logging.getLogger("knowledge_base_router")
 router = APIRouter(prefix="/knowledge-base", tags=["Knowledge Base"])
@@ -51,16 +52,28 @@ async def upload_document(
     try:
         chunks = _chunk_text(req.text)
 
-        from agents.sub_agents.knowledge_base.supabase_vector_store import upsert_document_chunks
-        stored = upsert_document_chunks(
-            [{"text": c} for c in chunks],
-            source_name=req.source_name,
-        )
-        return UploadResponse(
-            status="success",
-            chunks_stored=stored,
-            source_name=req.source_name,
-        )
+        async with track_run(
+            run_name=f"kb-upload-{req.source_name}",
+            run_type="knowledge_base",
+            params={
+                "operation": "upload",
+                "source_name": req.source_name,
+                "text_length": len(req.text),
+                "user_id": current_user["id"],
+            },
+            tags={"operation": "upload"},
+        ):
+            from agents.sub_agents.knowledge_base.supabase_vector_store import upsert_document_chunks
+            stored = upsert_document_chunks(
+                [{"text": c} for c in chunks],
+                source_name=req.source_name,
+            )
+            log_metric("chunks_stored", stored)
+            return UploadResponse(
+                status="success",
+                chunks_stored=stored,
+                source_name=req.source_name,
+            )
     except Exception as exc:
         logger.error(f"Upload error: {exc}", exc_info=True)
         raise HTTPException(
@@ -102,16 +115,29 @@ async def upload_file(
     source_name = (file.filename or "uploaded_doc").rsplit(".", 1)[0].strip() or "uploaded_doc"
     try:
         chunks = _chunk_text(text.strip())
-        from agents.sub_agents.knowledge_base.supabase_vector_store import upsert_document_chunks
-        stored = upsert_document_chunks(
-            [{"text": c} for c in chunks],
-            source_name=source_name,
-        )
-        return UploadResponse(
-            status="success",
-            chunks_stored=stored,
-            source_name=source_name,
-        )
+        async with track_run(
+            run_name=f"kb-upload-file-{source_name}",
+            run_type="knowledge_base",
+            params={
+                "operation": "upload_file",
+                "source_name": source_name,
+                "filename": file.filename or "",
+                "text_length": len(text),
+                "user_id": current_user["id"],
+            },
+            tags={"operation": "upload_file"},
+        ):
+            from agents.sub_agents.knowledge_base.supabase_vector_store import upsert_document_chunks
+            stored = upsert_document_chunks(
+                [{"text": c} for c in chunks],
+                source_name=source_name,
+            )
+            log_metric("chunks_stored", stored)
+            return UploadResponse(
+                status="success",
+                chunks_stored=stored,
+                source_name=source_name,
+            )
     except Exception as exc:
         logger.error(f"Upload file error: {exc}", exc_info=True)
         raise HTTPException(

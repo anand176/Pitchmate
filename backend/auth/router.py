@@ -1,11 +1,19 @@
 """
-Auth router — signup, login, logout via Supabase Auth.
+Auth router — signup, login, logout against Pitchmate's self-hosted Postgres
+user table (SQLAlchemy ORM), issuing our own signed JWTs.
 All endpoints return FastAPI-native JSON responses.
 """
 
-import os
-from fastapi import APIRouter, HTTPException, status
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from core.security import create_access_token, hash_password, verify_password
+from db.base import get_db_session
+from db.models import User
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -33,85 +41,64 @@ class AuthResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-def _supabase():
-    from core.supabase_client import get_supabase_client
-    return get_supabase_client()
-
-
-# ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
 
 @router.post("/signup", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
-async def signup(req: SignupRequest):
+async def signup(req: SignupRequest, db: Annotated[AsyncSession, Depends(get_db_session)]):
     """
-    Register a new user with Supabase Auth.
-    Returns the access token so the client can immediately make authenticated requests.
+    Register a new user. Accounts are activated immediately (no email
+    verification step). Returns an access token so the client can
+    immediately make authenticated requests.
     """
-    try:
-        sb = _supabase()
-        options_data = {}
-        if req.full_name:
-            options_data["data"] = {"full_name": req.full_name}
+    email = req.email.lower().strip()
 
-        res = sb.auth.sign_up(
-            {
-                "email": req.email,
-                "password": req.password,
-                **({"options": options_data} if options_data else {}),
-            }
+    existing = await db.scalar(select(User).where(User.email == email))
+    if existing is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="An account with this email already exists.",
         )
+
+    user = User(
+        email=email,
+        hashed_password=hash_password(req.password),
+        full_name=req.full_name,
+    )
+    db.add(user)
+    try:
+        await db.commit()
     except Exception as exc:
+        await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Signup failed: {str(exc)}",
         )
-
-    if res.user is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Signup failed: no user returned. Check if email confirmation is required.",
-        )
-
-    session = res.session
-    access_token = session.access_token if session else ""
+    await db.refresh(user)
 
     return AuthResponse(
-        access_token=access_token,
-        user_id=str(res.user.id),
-        email=res.user.email or req.email,
+        access_token=create_access_token(user.id, user.email),
+        user_id=user.id,
+        email=user.email,
     )
 
 
 @router.post("/login", response_model=AuthResponse)
-async def login(req: LoginRequest):
-    """
-    Sign in an existing user and return a Supabase JWT access token.
-    """
-    try:
-        sb = _supabase()
-        res = sb.auth.sign_in_with_password(
-            {"email": req.email, "password": req.password}
-        )
-    except Exception as exc:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Login failed: {str(exc)}",
-        )
+async def login(req: LoginRequest, db: Annotated[AsyncSession, Depends(get_db_session)]):
+    """Sign in an existing user and return a Pitchmate JWT access token."""
+    email = req.email.lower().strip()
+    user = await db.scalar(select(User).where(User.email == email))
 
-    if res.user is None or res.session is None:
+    if user is None or not verify_password(req.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials.",
         )
 
     return AuthResponse(
-        access_token=res.session.access_token,
-        user_id=str(res.user.id),
-        email=res.user.email or req.email,
+        access_token=create_access_token(user.id, user.email),
+        user_id=user.id,
+        email=user.email,
     )
 
 
@@ -119,10 +106,7 @@ async def login(req: LoginRequest):
 async def logout():
     """
     Sign out the currently authenticated user.
-    Client is responsible for discarding the token.
+    Tokens are stateless, so this is a no-op server-side — the client is
+    responsible for discarding the token.
     """
-    try:
-        _supabase().auth.sign_out()
-    except Exception:
-        pass  # best-effort
     return {"message": "Logged out successfully."}

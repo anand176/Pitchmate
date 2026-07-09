@@ -1,0 +1,123 @@
+# Runs the Pitchmate backend (FastAPI), frontend (Vite/React), and a local
+# Postgres database together for local development, with live reload on
+# both the backend and frontend.
+#
+# Usage:
+#   docker compose up --build
+#   → backend:  http://localhost:8000  (docs at /docs)
+#   → frontend: http://localhost:5173
+#   → db:       postgres://pitchmate:pitchmate@localhost:5432/pitchmate
+#   → mlflow:   http://localhost:5000  (experiment tracking UI)
+#
+# Requires backend/.env and frontend/.env to already exist (see README.md).
+# backend/.env must set JWT_SECRET_KEY (used to sign auth tokens) — DATABASE_URL
+# is provided below and always points at the `db` service in this file.
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: pitchmate-db
+    environment:
+      POSTGRES_USER: pitchmate
+      POSTGRES_PASSWORD: pitchmate
+      POSTGRES_DB: pitchmate
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pitchmate -d pitchmate"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - pitchmate-net
+
+  backend:
+    build:
+      context: ./backend
+    container_name: pitchmate-backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+    environment:
+      ARTIFACTS_ROOT_DIR: /app/artifacts
+      # User accounts (SQLAlchemy) and LangGraph chat-session checkpoints both
+      # live in this same Postgres instance. This overrides any DATABASE_URL
+      # set in backend/.env so Docker always talks to the `db` service above.
+      DATABASE_URL: postgresql://pitchmate:pitchmate@db:5432/pitchmate
+      MLFLOW_ENABLED: "true"
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      MLFLOW_EXPERIMENT_NAME: pitchmate-agents
+    volumes:
+      # Live-reload source changes from the host without rebuilding the image.
+      - ./backend:/app
+      - backend_artifacts:/app/artifacts
+    depends_on:
+      db:
+        condition: service_healthy
+      mlflow:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - pitchmate-net
+
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.22.0
+    container_name: pitchmate-mlflow
+    command: >
+      mlflow server
+      --host 0.0.0.0
+      --port 5000
+      --backend-store-uri sqlite:///mlflow/mlflow.db
+      --default-artifact-root /mlflow/artifacts
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlflow_data:/mlflow
+    restart: unless-stopped
+    networks:
+      - pitchmate-net
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: pitchmate-frontend
+    ports:
+      - "5173:5173"
+    env_file:
+      - ./frontend/.env
+    environment:
+      # Inside Docker the frontend must reach the backend by service name,
+      # not "localhost" (see vite.config.js).
+      VITE_PROXY_TARGET: http://backend:8000
+    volumes:
+      - ./frontend:/app
+      # Named volume so the container's own node_modules isn't shadowed by
+      # the host bind mount above (host may not have installed deps locally).
+      - frontend_node_modules:/app/node_modules
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - pitchmate-net
+
+networks:
+  pitchmate-net:
+    driver: bridge
+
+volumes:
+  pgdata:
+  mlflow_data:
+  backend_artifacts:
+  frontend_node_modules:

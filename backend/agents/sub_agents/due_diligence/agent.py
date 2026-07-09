@@ -2,31 +2,39 @@
 Due Diligence sub-agent — anticipates investor questions and generates Q&A PDF for meeting prep.
 """
 
-import google.genai.types as genai_types
-from google.adk.agents import Agent
-
+from agents.langgraph_base import create_google_llm, wrap_tool_function, create_react_agent
+from agents.guardrails_langgraph import create_guardrail_callbacks
 from agents.sub_agents.due_diligence import prompt
 from agents.sub_agents.due_diligence.tools import create_due_diligence_qa_pdf
 from core.config import config
 
-due_diligence_agent = Agent(
-    name="due_diligence_agent",
-    model=config.agents.get_model_for_agent("due_diligence_agent"),
-    description=(
-        "Anticipates investor questions, identifies red flags, and generates a due diligence Q&A PDF "
-        "for investor meeting prep. Use when the user explicitly asks: \"What questions will investors ask me?\", "
-        "\"Prepare me for investor meetings\", \"What are the tough questions about my deck?\", "
-        "\"Do due diligence on my startup\", \"What are the red flags in my pitch?\", "
-        "\"Help me prep for my investor call\", or to create a doc/PDF for investor Q&A prep."
-    ),
-    instruction=prompt.INSTRUCTION,
-    tools=[create_due_diligence_qa_pdf],
-    generate_content_config=genai_types.GenerateContentConfig(
-        temperature=0.3,
-        http_options=genai_types.HttpOptions(
-            retry_options=genai_types.HttpRetryOptions(
-                initial_delay=1.0, attempts=2, max_delay=5.0
-            )
-        ),
-    ),
+# Agent configuration
+AGENT_NAME = "due_diligence_agent"
+AGENT_DESCRIPTION = (
+    "Anticipates investor questions, identifies red flags, and generates a due diligence Q&A PDF "
+    "for investor meeting prep. Use when the user explicitly asks: \"What questions will investors ask me?\", "
+    "\"Prepare me for investor meetings\", \"What are the tough questions about my deck?\", "
+    "\"Do due diligence on my startup\", \"What are the red flags in my pitch?\", "
+    "\"Help me prep for my investor call\", or to create a doc/PDF for investor Q&A prep."
+)
+
+# Create LLM
+model = create_google_llm(
+    model=config.agents.get_model_for_agent(AGENT_NAME),
+    temperature=0.3,
+    max_retries=2,
+)
+
+# Wrap tools
+tools = [
+    wrap_tool_function(create_due_diligence_qa_pdf),
+]
+
+# Create compiled agent
+due_diligence_agent = create_react_agent(
+    model=model,
+    tools=tools,
+    system_prompt=prompt.INSTRUCTION,
+    agent_name=AGENT_NAME,
+    callbacks=create_guardrail_callbacks(agent_name=AGENT_NAME),
 )
