@@ -98,7 +98,7 @@ export default function InvestorsPage() {
                             {result.red_flags?.length > 0 && (
                                 <>
                                     <div className="dash-section-title">Investors to Avoid</div>
-                                    <div className="dash-list">{result.red_flags.map((s, i) => <div key={i} className="dash-list-item"><span className="bullet" style={{ color: "#CC0000" }}>-</span>{s}</div>)}</div>
+                                    <div className="dash-list">{result.red_flags.map((s, i) => <div key={i} className="dash-list-item"><span className="bullet">></span>{s}</div>)}</div>
                                 </>
                             )}
                         </div>

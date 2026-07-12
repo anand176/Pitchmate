@@ -108,7 +108,7 @@ export default function ChatPanel({ open, onClose, messages, setMessages, sessio
                     {messages.length === 0 && !loading && (
                         <div className="chat-welcome">
                             <div className="chat-welcome-icon">
-                                    <span style={{ fontWeight: 900, fontSize: 22, fontFamily: "'Playfair Display', serif" }}>P</span>
+                                    <span style={{ fontWeight: 900, fontSize: 18, fontFamily: "'Orbitron', monospace", color: "#00ff88", textShadow: "0 0 8px rgba(0,255,136,.6)" }}>P</span>
                             </div>
                             <h4>Ask me anything</h4>
                             <p>I can validate your market, draft outreach emails, review your deck, and more.</p>

@@ -61,7 +61,7 @@ export default function CompetitionPage() {
                     {result && (
                         <div className="dash-card">
                             <div className="dash-section-title">Suggested Moat</div>
-                            <p style={{ fontSize: 13, color: "#111111", lineHeight: 1.6, fontWeight: 600 }}>{result.suggested_moat}</p>
+                            <p style={{ fontSize: 13, color: "#e0e0e0", lineHeight: 1.6, fontWeight: 600 }}>{result.suggested_moat}</p>
 
                             {result.competitor_table?.length > 0 && (
                                 <>
@@ -88,7 +88,7 @@ export default function CompetitionPage() {
                             {result.gaps?.length > 0 && (
                                 <>
                                     <div className="dash-section-title">Gaps</div>
-                                    <div className="dash-list">{result.gaps.map((s, i) => <div key={i} className="dash-list-item"><span className="bullet" style={{ color: "#CC0000" }}>-</span>{s}</div>)}</div>
+                                    <div className="dash-list">{result.gaps.map((s, i) => <div key={i} className="dash-list-item"><span className="bullet">></span>{s}</div>)}</div>
                                 </>
                             )}
                             {result.recommendations?.length > 0 && (

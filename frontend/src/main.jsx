@@ -31,12 +31,13 @@ function App() {
     if (initializing) {
         return (
             <div style={{
-                minHeight: "100vh", background: "#F9F9F7",
+                minHeight: "100vh", background: "#0a0a0f",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                fontFamily: "'JetBrains Mono', 'Courier New', monospace", color: "#111111",
-                fontSize: 12, letterSpacing: 1, textTransform: "uppercase",
+                fontFamily: "'Share Tech Mono', 'JetBrains Mono', monospace", color: "#00ff88",
+                fontSize: 12, letterSpacing: 2, textTransform: "uppercase",
+                textShadow: "0 0 10px rgba(0,255,136,.5)",
             }}>
-                Loading...
+                Booting terminal...
             </div>
         );
     }
