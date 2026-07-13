@@ -1276,6 +1276,109 @@ export const DASHBOARD_STYLES = `
     box-shadow:var(--neon-sm);
   }
 
+  /* ── Onboarding wizard ───────────────────────────────────────── */
+  .onboard-wrap { max-width:760px; }
+  .onboard-steps {
+    display:flex; gap:8px; margin-bottom:18px; flex-wrap:wrap;
+  }
+  .onboard-step {
+    display:flex; align-items:center; gap:8px;
+    padding:8px 12px; border:1px solid var(--border);
+    font-family:var(--font-mono); font-size:11px; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--muted); background:rgba(0,0,0,.25);
+  }
+  .onboard-step.active {
+    border-color:var(--accent); color:var(--accent);
+    box-shadow:var(--neon-sm);
+  }
+  .onboard-step.done { color:#7dffb8; border-color:rgba(0,255,136,.35); }
+  .onboard-step-num {
+    font-family:'Orbitron',monospace; font-weight:700; font-size:10px;
+  }
+  .onboard-card h3 {
+    font-family:'Orbitron',monospace; font-size:14px; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--accent); margin:0 0 16px;
+  }
+  .onboard-stage-grid {
+    display:flex; flex-wrap:wrap; gap:8px;
+  }
+  .onboard-stage-btn {
+    background:rgba(0,0,0,.35); border:1px solid var(--border);
+    color:var(--text); font-family:var(--font-mono); font-size:11px;
+    letter-spacing:.06em; text-transform:uppercase; padding:8px 12px; cursor:pointer;
+  }
+  .onboard-stage-btn:hover { border-color:var(--accent); }
+  .onboard-stage-btn.active {
+    border-color:var(--accent); color:var(--accent); box-shadow:var(--neon-sm);
+  }
+  .onboard-actions {
+    display:flex; gap:10px; align-items:center; margin-top:20px; flex-wrap:wrap;
+  }
+  .onboard-upload-row {
+    display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 4px;
+  }
+  .onboard-check {
+    display:flex; align-items:center; gap:8px;
+    font-family:var(--font-mono); font-size:12px; color:var(--text);
+    margin:8px 0 12px; cursor:pointer;
+  }
+
+  /* ── Soft gate banner ────────────────────────────────────────── */
+  .dash-soft-banner {
+    padding:10px 20px; border-bottom:1px solid rgba(0,255,136,.25);
+    background:rgba(0,255,136,.06);
+    font-family:var(--font-mono); font-size:12px; letter-spacing:.04em;
+    color:var(--text);
+  }
+  .dash-soft-banner a {
+    color:var(--accent); text-decoration:underline;
+  }
+
+  /* ── Home readiness ──────────────────────────────────────────── */
+  .home-progress-meta {
+    display:flex; align-items:baseline; gap:10px; margin-bottom:12px;
+  }
+  .home-progress-pct {
+    font-family:'Orbitron',monospace; font-size:42px; font-weight:800;
+    color:var(--accent); text-shadow:0 0 12px rgba(0,255,136,.45);
+    line-height:1;
+  }
+  .home-progress-label {
+    font-family:var(--font-mono); font-size:11px; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--muted);
+  }
+  .home-progress-bar {
+    height:10px; background:rgba(255,255,255,.06);
+    border:1px solid var(--border); overflow:hidden; margin-bottom:18px;
+  }
+  .home-progress-fill {
+    height:100%; background:linear-gradient(90deg,#00ff88,#00c8ff);
+    box-shadow:0 0 12px rgba(0,255,136,.5);
+    transition:width .4s ease;
+  }
+  .home-milestone-list {
+    list-style:none; margin:0; padding:0;
+    display:flex; flex-direction:column; gap:8px;
+  }
+  .home-milestone-list li {
+    display:grid; grid-template-columns:28px 1fr auto; gap:8px; align-items:center;
+    font-family:var(--font-mono); font-size:12px; color:var(--muted);
+  }
+  .home-milestone-list li.done { color:var(--text); }
+  .home-ms-mark {
+    font-size:10px; letter-spacing:.08em; color:var(--accent);
+  }
+  .home-ms-w { color:var(--muted); font-size:10px; }
+  .home-next-copy {
+    font-size:15px; line-height:1.5; color:var(--text); margin:0 0 18px;
+  }
+  .home-next-actions { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+
+  .chat-bubble.system {
+    border-color:rgba(0,255,136,.45);
+    background:rgba(0,255,136,.08);
+  }
+
   @media (max-width: 900px) {
     .dash-header { grid-template-columns:auto 1fr; padding:12px 16px; }
     .dash-edition { display:none; }

@@ -33,19 +33,61 @@ class OrchestratorState(TypedDict):
     current_step: int
 
 
+def message_content_to_text(content: Any) -> str:
+    """
+    Normalize AIMessage.content to plain text.
+
+    Gemini 3+ / langchain-google-genai 4.x may return a list of content blocks
+    (with thought-signature extras) instead of a plain string.
+    """
+    if content is None:
+        return ""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts: list[str] = []
+        for block in content:
+            if isinstance(block, str):
+                parts.append(block)
+            elif isinstance(block, dict):
+                text = block.get("text")
+                if text:
+                    parts.append(str(text))
+            else:
+                text = getattr(block, "text", None)
+                if text:
+                    parts.append(str(text))
+        return "".join(parts)
+    return str(content)
+
+
+def ai_message_to_text(message: Any) -> str:
+    """Extract display text from an AIMessage (supports Gemini 3 block content)."""
+    text_attr = getattr(message, "text", None)
+    if isinstance(text_attr, str) and text_attr.strip():
+        return text_attr
+    return message_content_to_text(getattr(message, "content", ""))
+
+
 def create_google_llm(
-    model: str = "gemini-2.5-flash",
+    model: str = "gemini-3.5-flash",
     temperature: float = 0.3,
     max_retries: int = 2,
+    thinking_level: str | None = "low",
 ) -> ChatGoogleGenerativeAI:
     """
     Create a Google Generative AI LLM instance.
-    
+
+    Uses langchain-google-genai >= 3.1 so Gemini 3.x tool-calling loops preserve
+    thought_signature across turns (required by the API).
+
     Args:
-        model: Gemini model name (e.g., "gemini-2.5-flash", "gemini-2.0-flash-exp")
+        model: Gemini model name (e.g. "gemini-3.5-flash")
         temperature: Sampling temperature (0.0 to 1.0)
         max_retries: Number of retry attempts for failed requests
-        
+        thinking_level: Gemini 3+ thinking depth ("minimal"|"low"|"medium"|"high").
+            Pass None to use the API default. Ignored for models that don't support it.
+
     Returns:
         ChatGoogleGenerativeAI instance
     """
@@ -54,13 +96,23 @@ def create_google_llm(
     # agent fails at construction with a DefaultCredentialsError.
     api_key = os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY")
 
-    return ChatGoogleGenerativeAI(
-        model=model,
-        temperature=temperature,
-        max_retries=max_retries,
-        convert_system_message_to_human=True,  # Gemini compatibility
-        google_api_key=api_key,
-    )
+    kwargs: dict[str, Any] = {
+        "model": model,
+        "temperature": temperature,
+        "max_retries": max_retries,
+        "google_api_key": api_key,
+    }
+    # Gemini 3+ thinking control. Keep signatures intact via the upgraded SDK;
+    # "low" balances quality vs latency for multi-tool agent runs.
+    if thinking_level is not None and ("gemini-3" in model or "gemini-3." in model):
+        kwargs["thinking_level"] = thinking_level
+
+    try:
+        return ChatGoogleGenerativeAI(**kwargs)
+    except TypeError:
+        # Older SDK builds may not accept thinking_level — retry without it.
+        kwargs.pop("thinking_level", None)
+        return ChatGoogleGenerativeAI(**kwargs)
 
 
 def wrap_tool_function(func: callable, name: str | None = None, description: str | None = None) -> StructuredTool:
@@ -221,9 +273,9 @@ def create_tool_calling_agent(
             final_messages = [*messages, response, *tool_results["messages"]]
             final_formatted = prompt.invoke({"messages": final_messages})
             final_response = await model_with_tools.ainvoke(final_formatted.messages)
-            return final_response.content
+            return ai_message_to_text(final_response)
         
-        return response.content
+        return ai_message_to_text(response)
     
     return agent_executor
 

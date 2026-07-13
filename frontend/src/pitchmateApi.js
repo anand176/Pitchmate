@@ -234,6 +234,39 @@ export async function apiGetContext(sessionId = null) {
     return data; // { context }
 }
 
+// ─── Startup Profile ─────────────────────────────────────────────────────────
+
+/** Fetch the current user's startup profile (empty defaults if none). */
+export async function apiGetProfile() {
+    const headers = await authHeaders();
+    const res = await fetch(`${BACKEND}/startup/profile`, { method: "GET", headers });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data?.detail || `Profile fetch failed (${res.status})`);
+    return data;
+}
+
+/** Upsert startup profile fields (partial update). */
+export async function apiUpdateProfile(fields) {
+    const headers = await authHeaders();
+    const res = await fetch(`${BACKEND}/startup/profile`, {
+        method: "PUT",
+        headers,
+        body: JSON.stringify(fields),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data?.detail || `Profile save failed (${res.status})`);
+    return data;
+}
+
+/** Pitch-readiness / lifecycle progress + next action. */
+export async function apiGetReadiness() {
+    const headers = await authHeaders();
+    const res = await fetch(`${BACKEND}/startup/readiness`, { method: "GET", headers });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data?.detail || `Readiness fetch failed (${res.status})`);
+    return data;
+}
+
 // ─── Dashboard (structured, non-chat) endpoints ──────────────────────────────
 
 async function _postDashboard(path, body) {

@@ -16,9 +16,9 @@ class TestLangGraphBase:
         """Test LLM creation."""
         from agents.langgraph_base import create_google_llm
         
-        llm = create_google_llm(model="gemini-2.5-flash", temperature=0.3)
+        llm = create_google_llm(model="gemini-3.5-flash", temperature=0.3)
         assert llm is not None
-        assert llm.model.endswith("gemini-2.5-flash")
+        assert "gemini-3.5-flash" in str(llm.model)
         assert llm.temperature == 0.3
     
     def test_wrap_tool_function(self):

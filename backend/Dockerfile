@@ -4,10 +4,21 @@ WORKDIR /app
 
 # build-essential: a few pinned wheels (e.g. sentence-transformers deps) still
 # compile native extensions on slim images. curl: used by the compose healthcheck.
+# Node.js/npm: required for MCP stdio servers (@drawio/mcp, @figma/mcp via npx).
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential \
         curl \
-    && rm -rf /var/lib/apt/lists/*
+        ca-certificates \
+        gnupg \
+    && mkdir -p /etc/apt/keyrings \
+    && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
+        | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
+    && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" \
+        > /etc/apt/sources.list.d/nodesource.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends nodejs \
+    && rm -rf /var/lib/apt/lists/* \
+    && node --version && npm --version && npx --version
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

@@ -35,6 +35,10 @@ export default defineConfig({
                 target: BACKEND_TARGET,
                 changeOrigin: true,
             },
+            "/startup": {
+                target: BACKEND_TARGET,
+                changeOrigin: true,
+            },
             "/health": {
                 target: BACKEND_TARGET,
                 changeOrigin: true,

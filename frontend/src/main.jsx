@@ -3,6 +3,8 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import PitchMateAuth from "./PitchMateAuth.jsx";
 import DashboardLayout from "./components/DashboardLayout.jsx";
+import HomePage from "./pages/HomePage.jsx";
+import OnboardingPage from "./pages/OnboardingPage.jsx";
 import MarketPage from "./pages/MarketPage.jsx";
 import CompetitionPage from "./pages/CompetitionPage.jsx";
 import GTMPage from "./pages/GTMPage.jsx";
@@ -48,7 +50,8 @@ function App() {
         <BrowserRouter>
             <Routes>
                 <Route element={<DashboardLayout user={user} />}>
-                    <Route index element={<Navigate to="/market" replace />} />
+                    <Route index element={<HomePage />} />
+                    <Route path="onboarding" element={<OnboardingPage />} />
                     <Route path="market" element={<MarketPage />} />
                     <Route path="competition" element={<CompetitionPage />} />
                     <Route path="gtm" element={<GTMPage />} />
@@ -56,7 +59,7 @@ function App() {
                     <Route path="valuation" element={<ValuationPage />} />
                     <Route path="deck" element={<DeckPage />} />
                     <Route path="settings" element={<SettingsPage />} />
-                    <Route path="*" element={<Navigate to="/market" replace />} />
+                    <Route path="*" element={<Navigate to="/" replace />} />
                 </Route>
             </Routes>
         </BrowserRouter>

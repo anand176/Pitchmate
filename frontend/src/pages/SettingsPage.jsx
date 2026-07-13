@@ -1,121 +1,201 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useOutletContext } from "react-router-dom";
+import { Link, useOutletContext } from "react-router-dom";
 import {
     apiUploadDocument, apiUploadDocumentFile, apiListDocuments,
-    apiSaveContext, apiSaveContextFromFile, apiGetContext,
+    apiGetProfile, apiUpdateProfile, apiSaveContext,
 } from "../pitchmateApi";
 
+const STAGES = [
+    { value: "idea", label: "Idea" },
+    { value: "validating", label: "Validating" },
+    { value: "building", label: "Building" },
+    { value: "pre_revenue", label: "Pre-revenue" },
+    { value: "revenue", label: "Revenue" },
+    { value: "raising", label: "Raising" },
+    { value: "angel_backed", label: "Angel-backed" },
+    { value: "seed_closed", label: "Seed closed" },
+    { value: "series_a_plus", label: "Series A+" },
+];
+
 /**
- * SettingsPage - startup idea context (per chat session) + knowledge base
- * document uploads (global, semantic search). Moved here from the old chat
- * sidebar so tab pages stay focused on their own data.
+ * Profile & documents — merged Idea Desk + Share Doc + editable lifecycle.
  */
 export default function SettingsPage() {
-    const { sessionId, setSessionId } = useOutletContext();
+    const { sessionId, setSessionId, refreshProfile } = useOutletContext();
 
     return (
         <div>
             <div className="dash-page-header">
-                <h2>Settings</h2>
-                <p>Share your startup idea and upload documents so every agent has the context it needs.</p>
+                <h2>Profile & documents</h2>
+                <p>Update your startup stage, narrative, and knowledge-base uploads.</p>
             </div>
 
-            <IdeaContextPanel sessionId={sessionId} setSessionId={setSessionId} />
+            <ProfilePanelPanel refreshProfile={refreshProfile} sessionId={sessionId} setSessionId={setSessionId} />
             <div style={{ height: 16 }} />
             <ShareDocPanel />
         </div>
     );
 }
 
-function IdeaContextPanel({ sessionId, setSessionId }) {
-    const [context, setContext] = useState("");
-    const [saved, setSaved] = useState("");
+function ProfileEditorPanel({ refreshProfile, sessionId, setSessionId }) {
+    const [form, setForm] = useState({
+        company_name: "",
+        one_liner: "",
+        industry: "",
+        lifecycle_stage: "idea",
+        problem: "",
+        solution: "",
+        product_description: "",
+        is_actively_raising: false,
+        target_raise: "",
+        amount_raised: "",
+        investor_count: "",
+        investor_notes: "",
+    });
     const [saving, setSaving] = useState(false);
-    const [fileUploading, setFileUploading] = useState(false);
     const [msg, setMsg] = useState(null);
-    const ideaFileInputRef = useRef(null);
 
     useEffect(() => {
-        apiGetContext(sessionId)
-            .then((r) => { setContext(r.context || ""); setSaved(r.context || ""); })
+        apiGetProfile()
+            .then((p) => {
+                setForm({
+                    company_name: p.company_name || "",
+                    one_liner: p.one_liner || "",
+                    industry: p.industry || "",
+                    lifecycle_stage: p.lifecycle_stage || "idea",
+                    problem: p.problem || "",
+                    solution: p.solution || "",
+                    product_description: p.product_description || "",
+                    is_actively_raising: !!p.is_actively_raising,
+                    target_raise: p.target_raise || "",
+                    amount_raised: p.amount_raised || "",
+                    investor_count: p.investor_count != null ? String(p.investor_count) : "",
+                    investor_notes: p.investor_notes || "",
+                });
+            })
             .catch(() => { });
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [sessionId]);
+    }, []);
+
+    const update = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
     const handleSave = async () => {
-        if (!context.trim()) return;
-        setSaving(true); setMsg(null);
+        setSaving(true);
+        setMsg(null);
         try {
-            const data = await apiSaveContext(context.trim(), sessionId);
-            setSaved(context.trim());
-            if (data.session_id && setSessionId) setSessionId(data.session_id);
-            setMsg({ type: "success", text: "Saved: Context will be used in your chat session." });
+            const payload = {
+                ...form,
+                investor_count: form.investor_count === "" ? null : Number(form.investor_count),
+            };
+            const saved = await apiUpdateProfile(payload);
+            const summary = [
+                saved.company_name && `Company: ${saved.company_name}`,
+                saved.lifecycle_stage && `Stage: ${saved.lifecycle_stage}`,
+                saved.problem && `Problem: ${saved.problem}`,
+                saved.solution && `Solution: ${saved.solution}`,
+                saved.product_description && `Product: ${saved.product_description}`,
+            ].filter(Boolean).join("\n");
+            if (summary) {
+                try {
+                    const ctx = await apiSaveContext(summary, sessionId);
+                    if (ctx.session_id && setSessionId) setSessionId(ctx.session_id);
+                } catch { /* non-fatal */ }
+            }
+            if (refreshProfile) await refreshProfile();
+            setMsg({ type: "success", text: "Profile saved. Agents and chat will use this context." });
         } catch (e) {
-            setMsg({ type: "error", text: `Error: ${e.message}` });
-        } finally { setSaving(false); }
-    };
-
-    const handleIdeaFileUpload = async (e) => {
-        const file = e?.target?.files?.[0];
-        if (!file) return;
-        const ext = (file.name || "").toLowerCase();
-        if (!ext.endsWith(".pdf") && !ext.endsWith(".docx")) {
-            setMsg({ type: "error", text: "Only PDF and DOCX files are allowed." });
-            return;
-        }
-        setFileUploading(true); setMsg(null);
-        try {
-            const data = await apiSaveContextFromFile(file, sessionId);
-            setContext(data.context || "");
-            setSaved(data.context || "");
-            if (data.session_id && setSessionId) setSessionId(data.session_id);
-            setMsg({ type: "success", text: "Saved: Context imported from file." });
-        } catch (err) {
-            setMsg({ type: "error", text: `Error: ${err.message}` });
+            setMsg({ type: "error", text: e.message || "Save failed." });
         } finally {
-            setFileUploading(false);
-            if (ideaFileInputRef.current) ideaFileInputRef.current.value = "";
+            setSaving(false);
         }
     };
-
-    const isDirty = context.trim() !== saved.trim();
 
     return (
         <div className="kb-panel">
             <div className="kb-toggle-btn" style={{ cursor: "default" }}>
-                <span>Idea Desk</span>
-                <span>Share Your Idea</span>
-                {saved && <span className="kb-saved-dot" title="Context saved" />}
+                <span>Profile</span>
+                <span>Startup journey</span>
+                <Link to="/onboarding" className="dash-tag" style={{ marginLeft: "auto", textDecoration: "none" }}>
+                    Re-run wizard
+                </Link>
             </div>
             <div className="kb-body">
-                <p className="kb-desc">
-                    Describe your startup idea. It's used across your chat and every dashboard tab.
-                </p>
-                <div className="kb-file-upload-row">
-                    <input ref={ideaFileInputRef} type="file" accept=".pdf,.docx" className="kb-file-input"
-                        onChange={handleIdeaFileUpload} disabled={fileUploading} />
-                    <button type="button" className="kb-upload-file-btn" onClick={() => ideaFileInputRef.current?.click()}
-                        disabled={fileUploading}>
-                        {fileUploading ? "Uploading..." : "Upload PDF/DOCX"}
-                    </button>
+                <div className="dash-row">
+                    <div className="dash-field">
+                        <label>Company name</label>
+                        <input className="dash-input" value={form.company_name} onChange={(e) => update("company_name", e.target.value)} />
+                    </div>
+                    <div className="dash-field">
+                        <label>Industry</label>
+                        <input className="dash-input" value={form.industry} onChange={(e) => update("industry", e.target.value)} />
+                    </div>
                 </div>
-                <p className="kb-divider">or paste text below</p>
-                <textarea
-                    className="kb-textarea"
-                    placeholder="What's your startup? What problem does it solve? Who are your customers?"
-                    value={context}
-                    onChange={(e) => { setContext(e.target.value); setMsg(null); }}
-                    rows={6}
-                />
+                <div className="dash-field">
+                    <label>One-liner</label>
+                    <input className="dash-input" value={form.one_liner} onChange={(e) => update("one_liner", e.target.value)} />
+                </div>
+                <div className="dash-field">
+                    <label>Lifecycle stage</label>
+                    <div className="onboard-stage-grid">
+                        {STAGES.map((s) => (
+                            <button
+                                key={s.value}
+                                type="button"
+                                className={`onboard-stage-btn ${form.lifecycle_stage === s.value ? "active" : ""}`}
+                                onClick={() => update("lifecycle_stage", s.value)}
+                            >
+                                {s.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+                <div className="dash-field">
+                    <label>Problem</label>
+                    <textarea className="dash-textarea" rows={3} value={form.problem} onChange={(e) => update("problem", e.target.value)} />
+                </div>
+                <div className="dash-field">
+                    <label>Solution</label>
+                    <textarea className="dash-textarea" rows={3} value={form.solution} onChange={(e) => update("solution", e.target.value)} />
+                </div>
+                <div className="dash-field">
+                    <label>Product / architecture</label>
+                    <textarea className="dash-textarea" rows={4} value={form.product_description} onChange={(e) => update("product_description", e.target.value)} />
+                </div>
+
+                <div className="dash-section-title" style={{ marginTop: 8 }}>Funding progress</div>
+                <label className="onboard-check">
+                    <input
+                        type="checkbox"
+                        checked={form.is_actively_raising}
+                        onChange={(e) => update("is_actively_raising", e.target.checked)}
+                    />
+                    Actively raising
+                </label>
+                <div className="dash-row">
+                    <div className="dash-field">
+                        <label>Target raise</label>
+                        <input className="dash-input" placeholder="$1.5M" value={form.target_raise} onChange={(e) => update("target_raise", e.target.value)} />
+                    </div>
+                    <div className="dash-field">
+                        <label>Amount raised</label>
+                        <input className="dash-input" placeholder="$150K" value={form.amount_raised} onChange={(e) => update("amount_raised", e.target.value)} />
+                    </div>
+                    <div className="dash-field">
+                        <label>Investor count</label>
+                        <input className="dash-input" type="number" min="0" value={form.investor_count} onChange={(e) => update("investor_count", e.target.value)} />
+                    </div>
+                </div>
+                <div className="dash-field">
+                    <label>Investor notes</label>
+                    <textarea className="dash-textarea" rows={2} value={form.investor_notes} onChange={(e) => update("investor_notes", e.target.value)}
+                        placeholder="2 angels committed, lead intro pending..." />
+                </div>
+
                 <div className="kb-actions">
-                    <button className="kb-upload-btn" onClick={handleSave} disabled={!context.trim() || saving || !isDirty}>
-                        {saving ? "Saving..." : saved ? "Update Context" : "Save Context"}
+                    <button className="kb-upload-btn" type="button" onClick={handleSave} disabled={saving}>
+                        {saving ? "Saving..." : "Save profile"}
                     </button>
                 </div>
                 {msg && <p className={`kb-msg ${msg.type}`}>{msg.text}</p>}
-                {saved && !isDirty && (
-                    <p className="kb-desc" style={{ color: "#404040" }}>Agents know your idea.</p>
-                )}
             </div>
         </div>
     );
@@ -164,6 +244,10 @@ function ShareDocPanel() {
         try {
             const res = await apiUploadDocumentFile(file);
             setUploadMsg({ type: "success", text: `Stored ${res.chunks_stored} chunk(s) from "${res.source_name}".` });
+            // Mark deck-ish uploads on profile when filename suggests a deck
+            if (/deck|pitch/i.test(file.name)) {
+                try { await apiUpdateProfile({ has_deck_upload: true }); } catch { /* ignore */ }
+            }
             loadDocs();
         } catch (err) {
             setUploadMsg({ type: "error", text: `Error: ${err.message}` });
@@ -176,13 +260,13 @@ function ShareDocPanel() {
     return (
         <div className="kb-panel">
             <div className="kb-toggle-btn" style={{ cursor: "default" }}>
-                <span>Archive</span>
-                <span>Share Your Doc</span>
+                <span>Documents</span>
+                <span>Knowledge base</span>
                 {docs.length > 0 && <span className="kb-badge">{docs.length}</span>}
             </div>
             <div className="kb-body">
                 <p className="kb-desc">
-                    Upload large documents (market research, pitch deck text, competitor analysis) for semantic search by agents.
+                    Upload pitch decks, architecture docs, and research for semantic search by agents.
                 </p>
                 <div className="kb-file-upload-row">
                     <input ref={fileInputRef} type="file" accept=".pdf,.docx" className="kb-file-input"
@@ -195,11 +279,11 @@ function ShareDocPanel() {
                 <p className="kb-divider">or paste text below</p>
                 <div className="kb-field">
                     <input className="kb-input" type="text"
-                        placeholder="Document name (e.g. market_research, competitor_analysis)"
+                        placeholder="Document name (e.g. pitch_deck, architecture)"
                         value={sourceName} onChange={(e) => setSourceName(e.target.value)} />
                 </div>
                 <textarea className="kb-textarea"
-                    placeholder="Paste full document text here: market reports, pitch deck slides, customer research, investor memos..."
+                    placeholder="Paste full document text here..."
                     value={text} onChange={(e) => { setText(e.target.value); setUploadMsg(null); }} rows={5} />
                 <div className="kb-actions">
                     <button className="kb-upload-btn" onClick={handleUpload} disabled={!text.trim() || uploading}>

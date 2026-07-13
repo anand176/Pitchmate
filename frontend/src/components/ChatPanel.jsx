@@ -22,7 +22,7 @@ const AGENT_STEPS = [
  * floating action button, while `sessionId`/`messages` persist across tab
  * navigation (state is lifted to `DashboardLayout`).
  */
-export default function ChatPanel({ open, onClose, messages, setMessages, sessionId, setSessionId }) {
+export default function ChatPanel({ open, onClose, messages, setMessages, sessionId, setSessionId, profileComplete }) {
     const [input, setInput] = useState("");
     const [loading, setLoading] = useState(false);
     const [activeStepIdx, setActiveStepIdx] = useState(-1);
@@ -82,6 +82,10 @@ export default function ChatPanel({ open, onClose, messages, setMessages, sessio
         if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
     };
 
+    const onlySystemNudge = messages.length === 1 && messages[0]?.isSystem;
+    const showWelcome = messages.length === 0 && !loading;
+    const showNudgeStarters = onlySystemNudge && !loading;
+
     return (
         <>
             <div className={`chat-overlay ${open ? "open" : ""}`} onClick={onClose} />
@@ -105,13 +109,17 @@ export default function ChatPanel({ open, onClose, messages, setMessages, sessio
                 </div>
 
                 <div className="chat-messages" ref={chatRef}>
-                    {messages.length === 0 && !loading && (
+                    {showWelcome && (
                         <div className="chat-welcome">
                             <div className="chat-welcome-icon">
                                     <span style={{ fontWeight: 900, fontSize: 18, fontFamily: "'Orbitron', monospace", color: "#00ff88", textShadow: "0 0 8px rgba(0,255,136,.6)" }}>P</span>
                             </div>
                             <h4>Ask me anything</h4>
-                            <p>I can validate your market, draft outreach emails, review your deck, and more.</p>
+                            <p>
+                                {profileComplete
+                                    ? "Profile loaded. Ask me to validate market or draft your deck."
+                                    : "I can validate your market, draft outreach emails, review your deck, and more."}
+                            </p>
                             <div className="chat-starters">
                                 {STARTER_PROMPTS.map((p, i) => (
                                     <button key={i} className="chat-starter-btn" onClick={() => sendMessage(p)}>{p}</button>
@@ -142,7 +150,7 @@ export default function ChatPanel({ open, onClose, messages, setMessages, sessio
                                 </div>
                                 <div className="chat-bubble-wrap">
                                     <div
-                                        className={`chat-bubble ${msg.role === "assistant" ? "ai" : "user"} ${msg.isError ? "err" : ""}`}
+                                        className={`chat-bubble ${msg.role === "assistant" ? "ai" : "user"} ${msg.isError ? "err" : ""} ${msg.isSystem ? "system" : ""}`}
                                         dangerouslySetInnerHTML={{ __html: msg.role === "assistant" ? formatMessage(msg.content) : msg.content }}
                                     />
                                     {downloadMatches.length > 0 && (
@@ -174,6 +182,14 @@ export default function ChatPanel({ open, onClose, messages, setMessages, sessio
                             </div>
                         );
                     })}
+
+                    {showNudgeStarters && (
+                        <div className="chat-starters" style={{ padding: "0 16px 12px" }}>
+                            {STARTER_PROMPTS.map((p, i) => (
+                                <button key={i} className="chat-starter-btn" onClick={() => sendMessage(p)}>{p}</button>
+                            ))}
+                        </div>
+                    )}
 
                     {loading && (
                         <div className="chat-steps">

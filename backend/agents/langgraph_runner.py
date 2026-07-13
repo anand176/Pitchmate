@@ -18,6 +18,7 @@ from psycopg_pool import AsyncConnectionPool
 from psycopg.rows import dict_row
 
 from agents.guardrails_langgraph import find_blocked_keyword
+from agents.langgraph_base import ai_message_to_text
 from core.config import config
 from core.mlflow_tracking import MLflowCallbackHandler, log_metric, log_params, track_run
 
@@ -95,11 +96,13 @@ def get_cached_agent(agent_name: str) -> Any | None:
     return _agent_cache.get(agent_name)
 
 
-def _clean_response(text: str) -> str:
+def _clean_response(text: Any) -> str:
     """
     Clean up agent response by removing technical markers and reasoning blocks.
     Mirrors the original ADK runner's cleaning logic.
     """
+    if not isinstance(text, str):
+        text = ai_message_to_text(text) if text is not None else ""
     # Filter out technical markers
     text = text.replace("/*FINAL_ANSWER*/", "")
     text = text.replace("/FINAL_ANSWER/", "")
@@ -233,9 +236,9 @@ async def run_agent(
 
             last_message = messages[-1]
             if isinstance(last_message, AIMessage):
-                response_text = last_message.content
+                response_text = ai_message_to_text(last_message)
             else:
-                response_text = str(last_message)
+                response_text = ai_message_to_text(last_message) if hasattr(last_message, "content") else str(last_message)
 
             cleaned_response = _clean_response(response_text)
             log_params({"message_count": len(messages)})

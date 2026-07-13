@@ -60,6 +60,9 @@ class KeywordBlockGuardrail(BaseCallbackHandler):
         for message_list in messages:
             for message in message_list:
                 content = message.content if hasattr(message, 'content') else str(message)
+                if not isinstance(content, str):
+                    from agents.langgraph_base import message_content_to_text
+                    content = message_content_to_text(content)
                 for keyword in self.blocked_keywords:
                     if keyword.upper() in content.upper():
                         self.blocked_count += 1

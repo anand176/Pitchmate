@@ -8,10 +8,12 @@ from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import logging
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.dependencies import get_current_user
 from agents.session_context import get_session_context
 from core.config import config
+from db.base import get_db_session
 
 logger = logging.getLogger("agents_backend")
 logger.setLevel(logging.INFO)
@@ -30,35 +32,46 @@ class PitchmateResponse(BaseModel):
     session_id: str
 
 
-def _build_enriched_query(query: str, startup_context: str) -> str:
-    """Prepend the saved startup context to the user query if available."""
-    if not startup_context:
+def _build_enriched_query(query: str, profile_md: str, session_context: str) -> str:
+    """Prepend persistent profile + optional session context to the user query."""
+    parts: list[str] = []
+    if profile_md:
+        parts.append(profile_md)
+    if session_context:
+        parts.append("## Session Notes\n" + session_context)
+    if not parts:
         return query
-    return (
-        "## Your Startup Context\n"
-        f"{startup_context}\n\n"
-        "---\n"
-        f"## User Question\n{query}"
-    )
+    return "\n\n".join(parts) + "\n\n---\n## User Question\n" + query
 
 
 @router.post("/pitchmate", response_model=PitchmateResponse)
 async def pitchmate(
     req: PitchmateRequest,
     current_user: Annotated[dict, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db_session)],
 ):
     """
     Main Pitchmate agent endpoint.
-    Auto-prepends the user's saved startup context to every query.
+    Auto-prepends the user's startup profile and session context to every query.
     """
     user_id = current_user["id"]
     logger.info(f"Pitchmate request: user={user_id}, session_id={req.session_id}, query={req.query[:80]}...")
 
-    # Use startup context for this chat session (stored in session, not DB)
-    startup_context = get_session_context(req.session_id)
-    enriched_query = _build_enriched_query(req.query, startup_context)
-    if startup_context:
-        logger.info(f"Injected session context ({len(startup_context)} chars) for session {req.session_id}")
+    profile_md = ""
+    try:
+        from startup.router import get_profile_for_user, profile_to_markdown
+
+        profile = await get_profile_for_user(db, user_id)
+        profile_md = profile_to_markdown(profile)
+    except Exception as exc:  # noqa: BLE001 — chat must not fail if profile lookup fails
+        logger.warning("Could not load startup profile for chat: %s", exc)
+
+    session_context = get_session_context(req.session_id)
+    enriched_query = _build_enriched_query(req.query, profile_md, session_context)
+    if profile_md:
+        logger.info("Injected startup profile (%d chars) for user %s", len(profile_md), user_id)
+    if session_context:
+        logger.info(f"Injected session context ({len(session_context)} chars) for session {req.session_id}")
 
     try:
         from agents.agent_runner import handle_pitchmate_request

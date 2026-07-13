@@ -7,20 +7,20 @@ from typing import Any
 
 from langchain_core.tools import BaseTool
 from langgraph.graph.state import CompiledStateGraph
-from agents.langgraph_base import create_google_llm, create_react_agent, create_sub_agent_tool
+from agents.langgraph_base import create_google_llm, create_react_agent, create_sub_agent_tool, ai_message_to_text
 from agents.guardrails_langgraph import create_guardrail_callbacks
 from agents import prompt
 from agents.sub_agents import (
     market_validator_agent,
     investor_outreacher_agent,
     knowledge_base_agent,
-    figma_mcp_agent,
     web_search_agent,
-    drawio_agent,
     pitch_writer_agent,
     due_diligence_agent,
     deck_creator_agent,
     valuation_advisor_agent,
+    get_drawio_agent,
+    get_figma_agent,
 )
 from core.config import config
 
@@ -37,10 +37,11 @@ model = create_google_llm(
     max_retries=2,
 )
 
-# Define sub-agent metadata for tool creation
-SUB_AGENTS = [
+# Sub-agent metadata. MCP agents are resolved at build time via getters so they
+# pick up lifespan initialization (import-time values are often still None).
+SUB_AGENT_SPECS = [
     {
-        "agent": market_validator_agent,
+        "get_agent": lambda: market_validator_agent,
         "name": "market_validator_agent",
         "description": (
             "Validates market sizing (TAM/SAM/SOM) and competitive landscape; suggests go-to-market (GTM) strategy, "
@@ -49,7 +50,7 @@ SUB_AGENTS = [
         ),
     },
     {
-        "agent": investor_outreacher_agent,
+        "get_agent": lambda: investor_outreacher_agent,
         "name": "investor_outreacher_agent",
         "description": (
             "Identifies the right investor types for a startup's stage and industry, "
@@ -58,7 +59,7 @@ SUB_AGENTS = [
         ),
     },
     {
-        "agent": knowledge_base_agent,
+        "get_agent": lambda: knowledge_base_agent,
         "name": "knowledge_base_agent",
         "description": (
             "Answers questions about uploaded documents and reviews pitch decks by searching the vector DB. "
@@ -67,7 +68,7 @@ SUB_AGENTS = [
         ),
     },
     {
-        "agent": figma_mcp_agent,
+        "get_agent": get_figma_agent,
         "name": "figma_mcp_agent",
         "description": (
             "Analyses pitch deck visual design using the Figma MCP tool. "
@@ -76,7 +77,7 @@ SUB_AGENTS = [
         ),
     },
     {
-        "agent": web_search_agent,
+        "get_agent": lambda: web_search_agent,
         "name": "web_search_agent",
         "description": (
             "Web search agent that searches the web and news for market size data, key competitors, "
@@ -86,15 +87,16 @@ SUB_AGENTS = [
         ),
     },
     {
-        "agent": drawio_agent,
+        "get_agent": get_drawio_agent,
         "name": "drawio_agent",
         "description": (
-            "Creates and opens diagrams/drawings in the draw.io editor. Use mainly when the user asks for "
-            "drawings, diagrams, flowcharts, org charts, Mermaid diagrams, or similar visuals."
+            "Creates and opens diagrams/drawings in the draw.io editor via MCP (returns a View drawing URL). "
+            "Use when the user asks for drawings, diagrams, flowcharts, org charts, Mermaid diagrams, "
+            "budget allocation visuals, roadmaps, or similar. Do NOT invent manual paste-into-draw.io instructions."
         ),
     },
     {
-        "agent": pitch_writer_agent,
+        "get_agent": lambda: pitch_writer_agent,
         "name": "pitch_writer_agent",
         "description": (
             "Takes enriched context and generates: (1) a short elevator pitch (30–60 sec), and "
@@ -103,7 +105,7 @@ SUB_AGENTS = [
         ),
     },
     {
-        "agent": due_diligence_agent,
+        "get_agent": lambda: due_diligence_agent,
         "name": "due_diligence_agent",
         "description": (
             "Anticipates investor questions, identifies red flags, and generates a due diligence Q&A PDF. "
@@ -111,7 +113,7 @@ SUB_AGENTS = [
         ),
     },
     {
-        "agent": deck_creator_agent,
+        "get_agent": lambda: deck_creator_agent,
         "name": "deck_creator_agent",
         "description": (
             "Creates a pitch deck / product report as a document (PDF or DOCX) with sections: Problem, Solution, "
@@ -120,7 +122,7 @@ SUB_AGENTS = [
         ),
     },
     {
-        "agent": valuation_advisor_agent,
+        "get_agent": lambda: valuation_advisor_agent,
         "name": "valuation_advisor_agent",
         "description": (
             "Estimates a defensible pre-money valuation range using stage baselines, revenue multiple "
@@ -153,7 +155,7 @@ def create_sub_agent_executor(compiled_agent):
             messages_out = result.get("messages", [])
             if messages_out:
                 last_msg = messages_out[-1]
-                return last_msg.content if hasattr(last_msg, "content") else str(last_msg)
+                return ai_message_to_text(last_msg)
             return "Agent completed without response."
         except Exception as e:
             return f"Error executing agent: {str(e)}"
@@ -162,17 +164,19 @@ def create_sub_agent_executor(compiled_agent):
 
 
 def _build_sub_agent_tools() -> list[BaseTool]:
-    """Wrap each configured (non-None) sub-agent as an orchestrator tool."""
+    """Wrap each available (non-None) sub-agent as an orchestrator tool."""
     tools = []
-    for sub_agent_config in SUB_AGENTS:
-        if sub_agent_config["agent"] is not None:
-            executor = create_sub_agent_executor(sub_agent_config["agent"])
-            tool = create_sub_agent_tool(
-                agent_executor=executor,
-                name=sub_agent_config["name"],
-                description=sub_agent_config["description"],
-            )
-            tools.append(tool)
+    for spec in SUB_AGENT_SPECS:
+        agent = spec["get_agent"]()
+        if agent is None:
+            continue
+        executor = create_sub_agent_executor(agent)
+        tool = create_sub_agent_tool(
+            agent_executor=executor,
+            name=spec["name"],
+            description=spec["description"],
+        )
+        tools.append(tool)
     return tools
 
 

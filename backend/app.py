@@ -25,10 +25,16 @@ async def lifespan(app: FastAPI):
     from core.mlflow_tracking import init_mlflow
     init_mlflow()
 
+    # MCP-backed agents need async init (cannot use asyncio.run under uvicorn).
+    from agents.sub_agents.drawio.agent import init_drawio_agent
+    from agents.sub_agents.figma_mcp.agent import init_figma_agent
+    await init_drawio_agent()
+    await init_figma_agent()
+
     # Build the orchestrator with a real checkpointer (Postgres if DATABASE_URL
     # is set, else in-memory) so multi-turn chat sessions actually persist.
     # This must happen here (not at module import time) because checkpointer
-    # setup is async.
+    # setup is async — and AFTER MCP agents so drawio/figma tools are included.
     from agents.langgraph_runner import get_checkpointer, cache_agent
     from agents.agent import build_pitchmate_agent
 
@@ -71,12 +77,14 @@ from agents.backend import router as agents_router              # noqa: E402
 from agents.context_router import router as context_router      # noqa: E402
 from knowledge_base.router import router as kb_router           # noqa: E402
 from dashboard.router import router as dashboard_router         # noqa: E402
+from startup.router import router as startup_router            # noqa: E402
 
 app.include_router(auth_router)
 app.include_router(agents_router)
 app.include_router(context_router)
 app.include_router(kb_router)
 app.include_router(dashboard_router)
+app.include_router(startup_router)
 
 
 @app.get("/health", tags=["Health"])
