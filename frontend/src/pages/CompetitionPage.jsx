@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { apiDashboardCompetition } from "../pitchmateApi";
+import { UsersIcon } from "../icons";
 
 export default function CompetitionPage() {
     const [competitorsText, setCompetitorsText] = useState("");
@@ -56,7 +57,7 @@ export default function CompetitionPage() {
                         <div className="dash-card"><div className="dash-loading"><span className="dash-spinner" /> Evaluating competitive positioning...</div></div>
                     )}
                     {!loading && !result && (
-                        <div className="dash-card"><div className="dash-empty">List your known competitors to get a structured gap analysis and moat suggestion.</div></div>
+                        <div className="dash-card"><div className="dash-empty"><span className="dash-empty-icon"><UsersIcon size={20} /></span>List your known competitors to get a structured gap analysis and moat suggestion.</div></div>
                     )}
                     {result && (
                         <div className="dash-card">
@@ -82,19 +83,19 @@ export default function CompetitionPage() {
                             {result.strengths?.length > 0 && (
                                 <>
                                     <div className="dash-section-title">Strengths</div>
-                                    <div className="dash-list">{result.strengths.map((s, i) => <div key={i} className="dash-list-item"><span className="bullet">-</span>{s}</div>)}</div>
+                                    <div className="dash-list">{result.strengths.map((s, i) => <div key={i} className="dash-list-item"><span className="bullet">•</span>{s}</div>)}</div>
                                 </>
                             )}
                             {result.gaps?.length > 0 && (
                                 <>
                                     <div className="dash-section-title">Gaps</div>
-                                    <div className="dash-list">{result.gaps.map((s, i) => <div key={i} className="dash-list-item"><span className="bullet">></span>{s}</div>)}</div>
+                                    <div className="dash-list">{result.gaps.map((s, i) => <div key={i} className="dash-list-item"><span className="bullet">•</span>{s}</div>)}</div>
                                 </>
                             )}
                             {result.recommendations?.length > 0 && (
                                 <>
                                     <div className="dash-section-title">Recommendations</div>
-                                    <div className="dash-list">{result.recommendations.map((s, i) => <div key={i} className="dash-list-item"><span className="bullet">-</span>{s}</div>)}</div>
+                                    <div className="dash-list">{result.recommendations.map((s, i) => <div key={i} className="dash-list-item"><span className="bullet">•</span>{s}</div>)}</div>
                                 </>
                             )}
                         </div>

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { apiDashboardValuation } from "../pitchmateApi";
+import { CoinsIcon } from "../icons";
 
 const STAGES = ["Pre-Seed", "Seed", "Series A", "Series B+"];
 
@@ -86,7 +87,7 @@ export default function ValuationPage() {
                         <div className="dash-card"><div className="dash-loading"><span className="dash-spinner" /> Estimating valuation range...</div></div>
                     )}
                     {!loading && !result && (
-                        <div className="dash-card"><div className="dash-empty">Fill in your stage, sector, and traction to get a valuation range.</div></div>
+                        <div className="dash-card"><div className="dash-empty"><span className="dash-empty-icon"><CoinsIcon size={20} /></span>Fill in your stage, sector, and traction to get a valuation range.</div></div>
                     )}
                     {result && (
                         <div className="dash-card">
@@ -96,23 +97,23 @@ export default function ValuationPage() {
                             {result.value_drivers?.length > 0 && (
                                 <>
                                     <div className="dash-section-title">Value Drivers</div>
-                                    <div className="dash-list">{result.value_drivers.map((s, i) => <div key={i} className="dash-list-item"><span className="bullet">-</span>{s}</div>)}</div>
+                                    <div className="dash-list">{result.value_drivers.map((s, i) => <div key={i} className="dash-list-item"><span className="bullet">•</span>{s}</div>)}</div>
                                 </>
                             )}
                             {result.key_risks?.length > 0 && (
                                 <>
                                     <div className="dash-section-title">Key Risks</div>
-                                    <div className="dash-list">{result.key_risks.map((s, i) => <div key={i} className="dash-list-item"><span className="bullet">></span>{s}</div>)}</div>
+                                    <div className="dash-list">{result.key_risks.map((s, i) => <div key={i} className="dash-list-item"><span className="bullet">•</span>{s}</div>)}</div>
                                 </>
                             )}
                             {result.negotiation_guidance && (
                                 <>
                                     <div className="dash-section-title">Negotiation Guidance</div>
-                                    <p style={{ fontSize: 13, color: "#404040", lineHeight: 1.6 }}>{result.negotiation_guidance}</p>
+                                    <p style={{ fontSize: 13, color: "#9AA3B2", lineHeight: 1.6 }}>{result.negotiation_guidance}</p>
                                 </>
                             )}
                             {result.caveat && (
-                                <p style={{ fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: "#737373", marginTop: 16, lineHeight: 1.6 }}>
+                                <p style={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", color: "#6B7380", marginTop: 16, lineHeight: 1.6 }}>
                                     {result.caveat}
                                 </p>
                             )}

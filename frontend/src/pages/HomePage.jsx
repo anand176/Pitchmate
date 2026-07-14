@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useOutletContext } from "react-router-dom";
 import { apiGetReadiness } from "../pitchmateApi";
+import { CheckCircleIcon, MessageCircleIcon } from "../icons";
 
 /**
  * Dashboard home — readiness progress + single Next action CTA.
@@ -60,7 +61,7 @@ export default function HomePage() {
                             <ul className="home-milestone-list">
                                 {(readiness?.milestones || []).map((m) => (
                                     <li key={m.id} className={m.done ? "done" : ""}>
-                                        <span className="home-ms-mark">{m.done ? "OK" : "--"}</span>
+                                        <span className="home-ms-mark">{m.done && <CheckCircleIcon size={11} strokeWidth={2.5} />}</span>
                                         <span>{m.label}</span>
                                         <span className="home-ms-w">{m.weight}%</span>
                                     </li>
@@ -79,6 +80,7 @@ export default function HomePage() {
                         </Link>
                         {profile?.profile_complete && (
                             <button type="button" className="dash-btn-ghost" onClick={() => openChat?.()}>
+                                <MessageCircleIcon size={14} />
                                 Ask Pitchmate
                             </button>
                         )}

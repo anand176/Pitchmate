@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { apiDashboardInvestors } from "../pitchmateApi";
+import { HandshakeIcon } from "../icons";
 
 const STAGES = ["Pre-Seed", "Seed", "Series A", "Series B+"];
 
@@ -58,12 +59,12 @@ export default function InvestorsPage() {
                         <div className="dash-card"><div className="dash-loading"><span className="dash-spinner" /> Finding the right investor types...</div></div>
                     )}
                     {!loading && !result && (
-                        <div className="dash-card"><div className="dash-empty">Select your stage and industry to get a tiered investor targeting strategy.</div></div>
+                        <div className="dash-card"><div className="dash-empty"><span className="dash-empty-icon"><HandshakeIcon size={20} /></span>Select your stage and industry to get a tiered investor targeting strategy.</div></div>
                     )}
                     {result && (
                         <div className="dash-card">
                             <div className="dash-tag">Check size: {result.typical_check_size}</div>
-                            <p style={{ fontSize: 13, color: "#404040", lineHeight: 1.6, marginTop: 10 }}>{result.what_investors_look_for}</p>
+                            <p style={{ fontSize: 13, color: "#9AA3B2", lineHeight: 1.6, marginTop: 10 }}>{result.what_investors_look_for}</p>
 
                             {result.tiers?.length > 0 && (
                                 <>
@@ -76,7 +77,7 @@ export default function InvestorsPage() {
                                             <div style={{ marginBottom: 4 }}>
                                                 {tier.investor_types?.map((t, j) => <span key={j} className="dash-tag">{t}</span>)}
                                             </div>
-                                            {tier.rationale && <p style={{ fontSize: 12, color: "#525252", lineHeight: 1.5 }}>{tier.rationale}</p>}
+                                            {tier.rationale && <p style={{ fontSize: 12, color: "#9AA3B2", lineHeight: 1.5 }}>{tier.rationale}</p>}
                                         </div>
                                     ))}
                                 </>
@@ -85,20 +86,20 @@ export default function InvestorsPage() {
                             {result.example_profiles?.length > 0 && (
                                 <>
                                     <div className="dash-section-title">Example Investor Profiles</div>
-                                    <div className="dash-list">{result.example_profiles.map((p, i) => <div key={i} className="dash-list-item"><span className="bullet">-</span>{p}</div>)}</div>
+                                    <div className="dash-list">{result.example_profiles.map((p, i) => <div key={i} className="dash-list-item"><span className="bullet">•</span>{p}</div>)}</div>
                                 </>
                             )}
 
                             {result.outreach_strategy && (
                                 <>
                                     <div className="dash-section-title">Outreach Strategy</div>
-                                    <p style={{ fontSize: 13, color: "#404040", lineHeight: 1.6 }}>{result.outreach_strategy}</p>
+                                    <p style={{ fontSize: 13, color: "#9AA3B2", lineHeight: 1.6 }}>{result.outreach_strategy}</p>
                                 </>
                             )}
                             {result.red_flags?.length > 0 && (
                                 <>
                                     <div className="dash-section-title">Investors to Avoid</div>
-                                    <div className="dash-list">{result.red_flags.map((s, i) => <div key={i} className="dash-list-item"><span className="bullet">></span>{s}</div>)}</div>
+                                    <div className="dash-list">{result.red_flags.map((s, i) => <div key={i} className="dash-list-item"><span className="bullet">•</span>{s}</div>)}</div>
                                 </>
                             )}
                         </div>

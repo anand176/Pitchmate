@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { apiDashboardMarket } from "../pitchmateApi";
+import { TrendingUpIcon } from "../icons";
 
 export default function MarketPage() {
     const [form, setForm] = useState({ tam: "", sam: "", som: "", description: "" });
@@ -65,7 +66,7 @@ export default function MarketPage() {
                         <div className="dash-card"><div className="dash-loading"><span className="dash-spinner" /> Validating market claims...</div></div>
                     )}
                     {!loading && !result && (
-                        <div className="dash-card"><div className="dash-empty">Fill in your TAM/SAM/SOM and description, then submit to see a structured credibility assessment.</div></div>
+                        <div className="dash-card"><div className="dash-empty"><span className="dash-empty-icon"><TrendingUpIcon size={20} /></span>Fill in your TAM/SAM/SOM and description, then submit to see a structured credibility assessment.</div></div>
                     )}
                     {result && (
                         <div className="dash-card">
@@ -79,28 +80,28 @@ export default function MarketPage() {
                             )}
 
                             <div className="dash-section-title">TAM Assessment</div>
-                            <p style={{ fontSize: 13, color: "#404040", lineHeight: 1.6 }}>{result.tam_assessment}</p>
+                            <p style={{ fontSize: 13, color: "#9AA3B2", lineHeight: 1.6 }}>{result.tam_assessment}</p>
                             <div className="dash-section-title">SAM Assessment</div>
-                            <p style={{ fontSize: 13, color: "#404040", lineHeight: 1.6 }}>{result.sam_assessment}</p>
+                            <p style={{ fontSize: 13, color: "#9AA3B2", lineHeight: 1.6 }}>{result.sam_assessment}</p>
                             <div className="dash-section-title">SOM Assessment</div>
-                            <p style={{ fontSize: 13, color: "#404040", lineHeight: 1.6 }}>{result.som_assessment}</p>
+                            <p style={{ fontSize: 13, color: "#9AA3B2", lineHeight: 1.6 }}>{result.som_assessment}</p>
 
                             {result.strengths?.length > 0 && (
                                 <>
                                     <div className="dash-section-title">Strengths</div>
-                                    <div className="dash-list">{result.strengths.map((s, i) => <div key={i} className="dash-list-item"><span className="bullet">-</span>{s}</div>)}</div>
+                                    <div className="dash-list">{result.strengths.map((s, i) => <div key={i} className="dash-list-item"><span className="bullet">•</span>{s}</div>)}</div>
                                 </>
                             )}
                             {result.red_flags?.length > 0 && (
                                 <>
                                     <div className="dash-section-title">Red Flags</div>
-                                    <div className="dash-list">{result.red_flags.map((s, i) => <div key={i} className="dash-list-item"><span className="bullet">></span>{s}</div>)}</div>
+                                    <div className="dash-list">{result.red_flags.map((s, i) => <div key={i} className="dash-list-item"><span className="bullet">•</span>{s}</div>)}</div>
                                 </>
                             )}
                             {result.recommendations?.length > 0 && (
                                 <>
                                     <div className="dash-section-title">Recommendations</div>
-                                    <div className="dash-list">{result.recommendations.map((s, i) => <div key={i} className="dash-list-item"><span className="bullet">-</span>{s}</div>)}</div>
+                                    <div className="dash-list">{result.recommendations.map((s, i) => <div key={i} className="dash-list-item"><span className="bullet">•</span>{s}</div>)}</div>
                                 </>
                             )}
                         </div>

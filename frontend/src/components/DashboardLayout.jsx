@@ -3,15 +3,19 @@ import { NavLink, Outlet, Navigate, useLocation } from "react-router-dom";
 import { apiLogout, apiGetProfile } from "../pitchmateApi";
 import { DASHBOARD_STYLES } from "../theme";
 import ChatPanel from "./ChatPanel";
+import {
+    HomeIcon, TrendingUpIcon, UsersIcon, TargetIcon, HandshakeIcon,
+    CoinsIcon, FileTextIcon, SettingsIcon, LogOutIcon, MessageCircleIcon,
+} from "../icons";
 
 const NAV_ITEMS = [
-    { to: "/", icon: "00", label: "Home", end: true },
-    { to: "/market", icon: "01", label: "Market" },
-    { to: "/competition", icon: "02", label: "Competition" },
-    { to: "/gtm", icon: "03", label: "GTM Strategy" },
-    { to: "/investors", icon: "04", label: "Investors" },
-    { to: "/valuation", icon: "05", label: "Valuation" },
-    { to: "/deck", icon: "06", label: "Deck" },
+    { to: "/", icon: HomeIcon, label: "Home", end: true },
+    { to: "/market", icon: TrendingUpIcon, label: "Market" },
+    { to: "/competition", icon: UsersIcon, label: "Competition" },
+    { to: "/gtm", icon: TargetIcon, label: "GTM Strategy" },
+    { to: "/investors", icon: HandshakeIcon, label: "Investors" },
+    { to: "/valuation", icon: CoinsIcon, label: "Valuation" },
+    { to: "/deck", icon: FileTextIcon, label: "Deck" },
 ];
 
 /**
@@ -103,26 +107,18 @@ export default function DashboardLayout({ user }) {
             <header className="dash-header">
                 <div className="dash-logo-mark">P</div>
                 <div className="dash-header-text">
-                    <h1 className="cyber-glitch">Pitchmate</h1>
-                    <p>AI Pitch Co-Pilot // LIVE</p>
+                    <h1>Pitchmate</h1>
+                    <p>AI pitch co-pilot</p>
                 </div>
                 <div className="dash-header-right">
-                    <div className="dash-edition">NODE.01 | {editionDate} | FOUNDER LINK</div>
+                    <div className="dash-edition">{editionDate}</div>
                     <div className="dash-user-badge">{userInitial}</div>
-                    <button className="dash-btn-ghost" onClick={handleSignOut}>Sign Out</button>
+                    <button className="dash-btn-ghost" onClick={handleSignOut}>
+                        <LogOutIcon size={14} />
+                        Sign out
+                    </button>
                 </div>
             </header>
-
-            <div className="dash-ticker" aria-label="Pitchmate signal ticker">
-                <div className="dash-ticker-track">
-                    <span><b>SIGNAL</b> Market scan</span>
-                    <span>Competition intel</span>
-                    <span>GTM uplink</span>
-                    <span>Investor match</span>
-                    <span>Valuation core</span>
-                    <span>Deck forge</span>
-                </div>
-            </div>
 
             {profileLoaded && !profile?.profile_complete && !onOnboarding && (
                 <div className="dash-soft-banner">
@@ -135,20 +131,24 @@ export default function DashboardLayout({ user }) {
             <div className="dash-body">
                 {!onOnboarding && (
                     <aside className="dash-sidebar">
-                        {NAV_ITEMS.map((item) => (
-                            <NavLink
-                                key={item.to}
-                                to={item.to}
-                                end={item.end}
-                                className={({ isActive }) => `dash-nav-item ${isActive ? "active" : ""}`}
-                            >
-                                <span className="dash-nav-icon">{item.icon}</span>
-                                {item.label}
-                            </NavLink>
-                        ))}
+                        <div className="dash-sidebar-label">Workspace</div>
+                        {NAV_ITEMS.map((item) => {
+                            const ItemIcon = item.icon;
+                            return (
+                                <NavLink
+                                    key={item.to}
+                                    to={item.to}
+                                    end={item.end}
+                                    className={({ isActive }) => `dash-nav-item ${isActive ? "active" : ""}`}
+                                >
+                                    <span className="dash-nav-icon"><ItemIcon size={18} /></span>
+                                    {item.label}
+                                </NavLink>
+                            );
+                        })}
                         <div className="dash-nav-divider" />
                         <NavLink to="/settings" className={({ isActive }) => `dash-nav-item ${isActive ? "active" : ""}`}>
-                            <span className="dash-nav-icon">07</span>
+                            <span className="dash-nav-icon"><SettingsIcon size={18} /></span>
                             Profile & docs
                         </NavLink>
                     </aside>
@@ -169,9 +169,7 @@ export default function DashboardLayout({ user }) {
 
             {!chatOpen && !onOnboarding && (
                 <button className="chat-fab" onClick={() => setChatOpen(true)} title="Chat with Pitchmate" aria-label="Chat with Pitchmate">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-                    </svg>
+                    <MessageCircleIcon size={24} strokeWidth={1.5} />
                 </button>
             )}
 

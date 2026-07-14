@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { apiDashboardDeck, apiDashboardDeckExport, apiDownloadArtifact } from "../pitchmateApi";
+import { FileTextIcon } from "../icons";
 
 const SECTION_FIELDS = [
     { key: "problem", label: "Problem" },
@@ -98,7 +99,7 @@ export default function DeckPage() {
                         <div className="dash-card"><div className="dash-loading"><span className="dash-spinner" /> Drafting deck sections...</div></div>
                     )}
                     {!loading && !result && (
-                        <div className="dash-card"><div className="dash-empty">Fill in whatever deck content you have and draft polished, investor-ready copy, or export directly from your own notes.</div></div>
+                        <div className="dash-card"><div className="dash-empty"><span className="dash-empty-icon"><FileTextIcon size={20} /></span>Fill in whatever deck content you have and draft polished, investor-ready copy, or export directly from your own notes.</div></div>
                     )}
                     {result && (
                         <div className="dash-card">
@@ -106,7 +107,7 @@ export default function DeckPage() {
                             {result.sections?.map((s) => (
                                 <div key={s.key} style={{ marginBottom: 14 }}>
                                     <div className="dash-section-title">{s.title}</div>
-                                    <p style={{ fontSize: 13, color: "#404040", lineHeight: 1.6 }}>{s.content}</p>
+                                    <p style={{ fontSize: 13, color: "#9AA3B2", lineHeight: 1.6 }}>{s.content}</p>
                                 </div>
                             ))}
                         </div>

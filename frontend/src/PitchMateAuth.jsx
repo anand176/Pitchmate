@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { apiSignup, apiLogin } from "./pitchmateApi";
+import { SparklesIcon, CheckCircleIcon } from "./icons";
 
 /**
- * PitchMateAuth
- * Cyberpunk-styled auth page for Pitchmate's self-hosted JWT auth.
+ * PitchMateAuth — calm dark auth for Pitchmate's self-hosted JWT.
  */
 export default function PitchMateAuth({ onAuthenticated }) {
     const [mode, setMode] = useState("signin");
@@ -48,54 +48,47 @@ export default function PitchMateAuth({ onAuthenticated }) {
             <style>{CSS}</style>
 
             <header className="auth-masthead">
-                <div className="auth-logo-mark">P</div>
+                <div className="auth-logo-mark"><SparklesIcon size={18} /></div>
                 <div>
-                    <h1 className="cyber-glitch">Pitchmate</h1>
-                    <p>SYS.01 // Founder Terminal // AI Pitch Co-Pilot</p>
+                    <h1>Pitchmate</h1>
+                    <p>AI pitch co-pilot for founders</p>
                 </div>
             </header>
 
             <main className="auth-layout">
                 <section className="auth-hero">
-                    <div className="auth-kicker">// ACCESS PROTOCOL</div>
-                    <h2 className="cyber-glitch">
-                        Hack your pitch.<br />Ship investor-ready.
-                        <span className="auth-cursor">_</span>
+                    <div className="auth-kicker">Founder workspace</div>
+                    <h2>
+                        From idea to<br />investor-ready.
                     </h2>
                     <p className="auth-lede">
-                        Pitchmate is a rogue terminal for founders — market validation, deck ops, investor strategy, and messaging in one neon-lit workspace.
+                        Validate your market, shape your narrative, target the right investors,
+                        and prepare diligence — in one calm workspace that remembers your startup.
                     </p>
                     <div className="auth-grid">
                         {[
-                            "Deck slide review and scoring",
                             "Market size validation",
-                            "Go-to-market strategy",
-                            "Investor outreach drafts",
-                        ].map((item, i) => (
+                            "Deck & narrative coaching",
+                            "Investor targeting",
+                            "Diligence Q&A prep",
+                        ].map((item) => (
                             <div className="auth-grid-item" key={item}>
-                                <span>MOD_0{i + 1}</span>
+                                <span className="auth-grid-dot"><CheckCircleIcon size={14} strokeWidth={2.2} /></span>
                                 {item}
                             </div>
                         ))}
                     </div>
                     <blockquote>
-                        <p>"Got funded in 3 months after using Pitchmate."</p>
-                        <cite>Arjun R. | SaaS Founder, Series A</cite>
+                        <p>“Got funded in 3 months after using Pitchmate.”</p>
+                        <cite>Arjun R. · SaaS Founder, Series A</cite>
                     </blockquote>
                 </section>
 
                 <section className="auth-card" aria-label={isSignup ? "Create account" : "Sign in"}>
-                    <div className="auth-card-chrome">
-                        <span className="dot red" />
-                        <span className="dot yellow" />
-                        <span className="dot green" />
-                        <span className="auth-card-title">auth_session.exe</span>
-                    </div>
-
                     {submitted && (
                         <div className="success-overlay">
-                            <p>{isSignup ? "ACCESS GRANTED" : "WELCOME BACK"}</p>
-                            <span>Booting workspace<span className="auth-cursor">_</span></span>
+                            <p>{isSignup ? "Account created" : "Welcome back"}</p>
+                            <span>Opening your workspace…</span>
                         </div>
                     )}
 
@@ -107,21 +100,20 @@ export default function PitchMateAuth({ onAuthenticated }) {
                                 className={`tab ${mode === m ? "active" : ""}`}
                                 onClick={() => { setMode(m); setError(""); }}
                             >
-                                {m === "signin" ? "Sign In" : "Sign Up"}
+                                {m === "signin" ? "Sign in" : "Sign up"}
                             </button>
                         ))}
                     </div>
 
                     <div className="auth-card-heading">
-                        <div className="auth-kicker">SUBSCRIBER ACCESS</div>
-                        <h3>{isSignup ? "Create account" : "Welcome back"}</h3>
-                        <p>{isSignup ? "> Initialize your founder node." : "> Continue building your pitch."}</p>
+                        <h3>{isSignup ? "Create your account" : "Welcome back"}</h3>
+                        <p>{isSignup ? "Start with a startup profile in under two minutes." : "Continue building your pitch."}</p>
                     </div>
 
                     <form onSubmit={handleSubmit} className="auth-form">
                         {isSignup && (
                             <div className="auth-field">
-                                <label>Full Name</label>
+                                <label>Full name</label>
                                 <input
                                     className="auth-input"
                                     type="text"
@@ -133,7 +125,7 @@ export default function PitchMateAuth({ onAuthenticated }) {
                         )}
 
                         <div className="auth-field">
-                            <label>Email Address</label>
+                            <label>Email</label>
                             <input
                                 className="auth-input"
                                 type="email"
@@ -157,7 +149,7 @@ export default function PitchMateAuth({ onAuthenticated }) {
 
                         {isSignup && (
                             <div className="auth-field">
-                                <label>Confirm Password</label>
+                                <label>Confirm password</label>
                                 <input
                                     className="auth-input"
                                     type="password"
@@ -175,7 +167,7 @@ export default function PitchMateAuth({ onAuthenticated }) {
                         )}
 
                         <button type="submit" className="submit-btn" disabled={loading}>
-                            {loading ? (isSignup ? "Creating account..." : "Signing in...") : isSignup ? "Create Account" : "Sign In"}
+                            {loading ? (isSignup ? "Creating account..." : "Signing in...") : isSignup ? "Create account" : "Sign in"}
                         </button>
 
                         {error && <p className="auth-error">{error}</p>}
@@ -188,9 +180,9 @@ export default function PitchMateAuth({ onAuthenticated }) {
                     </form>
 
                     <p className="auth-switch">
-                        {isSignup ? "Already have an account? " : "Do not have an account? "}
+                        {isSignup ? "Already have an account? " : "Don’t have an account? "}
                         <button type="button" onClick={() => { setMode(isSignup ? "signin" : "signup"); setError(""); }}>
-                            {isSignup ? "Sign In" : "Sign Up Free"}
+                            {isSignup ? "Sign in" : "Sign up free"}
                         </button>
                     </p>
                 </section>
@@ -220,7 +212,7 @@ function PasswordStrength({ password }) {
             <div className="strength-checks">
                 {checks.map((c) => (
                     <span key={c.label} className={c.ok ? "ok" : ""}>
-                        <i>{c.ok ? "OK" : "--"}</i>
+                        <i>{c.ok ? "✓" : "·"}</i>
                         {c.label}
                     </span>
                 ))}
@@ -230,25 +222,27 @@ function PasswordStrength({ password }) {
 }
 
 const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Orbitron:wght@500;600;700;800;900&family=Share+Tech+Mono&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Outfit:wght@500;600;700;800&display=swap');
 
   :root {
-    --bg: #0a0a0f;
-    --fg: #e0e0e0;
-    --card: #12121a;
-    --muted: #1c1c2e;
-    --muted-fg: #6b7280;
-    --accent: #00ff88;
-    --accent-2: #ff00ff;
-    --accent-3: #00d4ff;
-    --border: #2a2a3a;
-    --destructive: #ff3366;
-    --neon: 0 0 5px #00ff88, 0 0 10px #00ff8840;
-    --neon-sm: 0 0 3px #00ff88, 0 0 6px #00ff8830;
-    --neon-lg: 0 0 10px #00ff88, 0 0 20px #00ff8860, 0 0 40px #00ff8830;
-    --neon-2: 0 0 5px #ff00ff, 0 0 20px #ff00ff60;
-    --chamfer: polygon(0 8px, 8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px));
-    --chamfer-sm: polygon(0 6px, 6px 0, calc(100% - 6px) 0, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 0 calc(100% - 6px));
+    --bg: #0A0B0D;
+    --fg: #F2F3F5;
+    --card: #131519;
+    --muted: #191C22;
+    --muted-fg: #9AA1AC;
+    --text-muted: #686F7A;
+    --accent: #2DD4A8;
+    --accent-hover: #4EE2BA;
+    --accent-soft: rgba(45, 212, 168, 0.12);
+    --gradient-accent: linear-gradient(135deg, #22C39A 0%, #2DD4A8 55%, #5FE8C4 100%);
+    --border: rgba(255, 255, 255, 0.08);
+    --hover: #1C2027;
+    --destructive: #F0625F;
+    --radius: 18px;
+    --radius-sm: 10px;
+    --font-body: 'Inter', system-ui, sans-serif;
+    --font-display: 'Outfit', system-ui, sans-serif;
+    --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
   }
 
   * { box-sizing:border-box; }
@@ -257,499 +251,316 @@ const CSS = `
   button, input { font:inherit; }
   button:focus-visible, a:focus-visible, input:focus-visible {
     outline:none;
-    box-shadow:0 0 0 2px var(--bg), 0 0 0 4px var(--accent), var(--neon-sm);
-  }
-
-  .cyber-glitch {
-    position:relative;
-    animation:rgbShift 4s steps(2) infinite;
-  }
-  @keyframes rgbShift {
-    0%, 90%, 100% { text-shadow: -2px 0 #ff00ff, 2px 0 #00d4ff, 0 0 12px rgba(0,255,136,.45); }
-    92% { text-shadow: 2px 0 #ff00ff, -2px 0 #00d4ff; transform:translate(1px,-1px); }
-    94% { text-shadow: -1px 0 #ff00ff, 3px 0 #00d4ff; transform:translate(-2px,1px); }
-    96% { text-shadow: 2px 0 #ff00ff, -2px 0 #00d4ff; transform:translate(0); }
-  }
-  @keyframes cursor-blink {
-    0%, 49% { opacity:1; }
-    50%, 100% { opacity:0; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .cyber-glitch { animation:none; text-shadow:-1px 0 #ff00ff, 1px 0 #00d4ff; }
-    .auth-cursor { animation:none; }
+    box-shadow:0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
   }
 
   .auth-root {
     min-height:100vh;
-    background-color:var(--bg);
-    background-image:
-      radial-gradient(ellipse at 15% 10%, rgba(0,255,136,.08) 0%, transparent 50%),
-      radial-gradient(ellipse at 85% 90%, rgba(255,0,255,.06) 0%, transparent 45%),
-      linear-gradient(rgba(0,255,136,.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,255,136,.03) 1px, transparent 1px);
-    background-size:auto, auto, 50px 50px, 50px 50px;
+    background:
+      radial-gradient(ellipse at 20% 0%, rgba(45,212,168,.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 100% 80%, rgba(91,141,239,.06) 0%, transparent 45%),
+      var(--bg);
     color:var(--fg);
-    font-family:'JetBrains Mono','Fira Code','Consolas',monospace;
-    position:relative;
-  }
-  .auth-root::after {
-    content:'';
-    position:fixed;
-    inset:0;
-    z-index:9999;
-    pointer-events:none;
-    background:repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0,0,0,.28) 2px,
-      rgba(0,0,0,.28) 4px
-    );
-    opacity:.35;
+    font-family:var(--font-body);
   }
 
   .auth-masthead {
-    min-height:76px;
-    padding:14px 24px;
+    min-height:72px;
+    padding:14px 28px;
     border-bottom:1px solid var(--border);
     display:flex;
     align-items:center;
     gap:14px;
-    background:rgba(10,10,15,.92);
+    background:rgba(15,17,21,.9);
     backdrop-filter:blur(12px);
-    box-shadow:0 1px 0 rgba(0,255,136,.15);
-    position:relative;
-    z-index:2;
   }
   .auth-logo-mark {
-    width:42px;
-    height:42px;
-    background:transparent;
-    border:2px solid var(--accent);
-    color:var(--accent);
-    clip-path:var(--chamfer-sm);
+    width:40px;
+    height:40px;
+    border-radius:var(--radius-sm);
+    background:var(--gradient-accent);
+    color:#06120E;
     display:flex;
     align-items:center;
     justify-content:center;
-    font-family:'Orbitron',monospace;
-    font-size:20px;
-    font-weight:900;
-    box-shadow:var(--neon-sm);
-    text-shadow:0 0 8px rgba(0,255,136,.6);
+    box-shadow:0 6px 18px rgba(45,212,168,.3);
+    flex-shrink:0;
   }
   .auth-masthead h1 {
     margin:0;
-    font-family:'Orbitron',monospace;
-    font-size:26px;
-    font-weight:900;
-    line-height:1;
-    letter-spacing:.16em;
-    text-transform:uppercase;
-    color:var(--accent);
-  }
-  .auth-masthead p {
-    margin:6px 0 0;
-    color:var(--muted-fg);
-    font-family:'Share Tech Mono',monospace;
-    font-size:10px;
-    letter-spacing:.18em;
-    text-transform:uppercase;
-  }
-  .auth-layout {
-    position:relative;
-    z-index:1;
-    max-width:1280px;
-    min-height:calc(100vh - 76px);
-    margin:0 auto;
-    display:grid;
-    grid-template-columns:minmax(0, 6fr) minmax(360px, 4fr);
-    gap:0;
-  }
-  .auth-hero {
-    position:relative;
-    padding:52px 48px;
-  }
-  .auth-kicker {
-    display:inline-flex;
-    margin-bottom:18px;
-    padding:4px 10px;
-    background:transparent;
-    border:1px solid var(--accent);
-    color:var(--accent);
-    font-family:'Share Tech Mono',monospace;
-    font-size:10px;
+    font-family:var(--font-display);
+    font-size:22px;
     font-weight:700;
-    letter-spacing:.18em;
-    text-transform:uppercase;
-    clip-path:var(--chamfer-sm);
-    box-shadow:var(--neon-sm);
-  }
-  .auth-hero h2 {
-    max-width:820px;
-    margin:0 0 22px;
-    font-family:'Orbitron',monospace;
-    font-size:clamp(36px, 6vw, 64px);
-    font-weight:900;
-    line-height:1.05;
-    letter-spacing:.06em;
-    text-transform:uppercase;
+    letter-spacing:-0.02em;
     color:var(--fg);
   }
-  .auth-cursor {
+  .auth-masthead p {
+    margin:2px 0 0;
+    color:var(--muted-fg);
+    font-size:13px;
+  }
+
+  .auth-layout {
+    max-width:1080px;
+    margin:0 auto;
+    padding:48px 24px 64px;
+    display:grid;
+    grid-template-columns:1.1fr 0.9fr;
+    gap:48px;
+    align-items:start;
+  }
+
+  .auth-kicker {
+    font-family:var(--font-mono);
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
     color:var(--accent);
-    animation:cursor-blink 1s step-end infinite;
+    margin-bottom:14px;
+  }
+  .auth-hero h2 {
+    margin:0 0 16px;
+    font-family:var(--font-display);
+    font-size:clamp(32px, 5vw, 48px);
+    font-weight:700;
+    line-height:1.12;
+    letter-spacing:-0.03em;
+    color:var(--fg);
   }
   .auth-lede {
-    max-width:640px;
-    margin:0 0 30px;
+    margin:0 0 28px;
     color:var(--muted-fg);
-    font-family:'JetBrains Mono',monospace;
-    font-size:15px;
-    line-height:1.7;
-    letter-spacing:.03em;
+    font-size:16px;
+    line-height:1.65;
+    max-width:42ch;
   }
   .auth-grid {
     display:grid;
-    grid-template-columns:repeat(2, minmax(0, 1fr));
-    gap:12px;
-    margin-bottom:30px;
+    gap:10px;
+    margin-bottom:32px;
   }
   .auth-grid-item {
-    min-height:100px;
-    padding:16px;
-    background:rgba(18,18,26,.7);
-    border:1px solid var(--border);
-    color:var(--fg);
-    font-family:'Orbitron',monospace;
-    font-size:14px;
-    font-weight:700;
-    line-height:1.25;
-    letter-spacing:.04em;
-    text-transform:uppercase;
-    clip-path:var(--chamfer);
-    transition:all 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  .auth-grid-item:hover {
-    border-color:var(--accent);
-    box-shadow:var(--neon-sm);
-    transform:translateY(-2px);
-  }
-  .auth-grid-item span {
-    display:block;
-    margin-bottom:12px;
-    color:var(--accent-3);
-    font-family:'Share Tech Mono',monospace;
-    font-size:10px;
-    font-weight:500;
-    letter-spacing:.16em;
-    text-transform:uppercase;
-  }
-  blockquote {
-    margin:0;
-    max-width:580px;
-    padding:18px 20px;
-    border:1px solid var(--accent-2);
-    background:rgba(255,0,255,.06);
-    color:var(--fg);
-    clip-path:var(--chamfer);
-    box-shadow:var(--neon-2);
-  }
-  blockquote p {
-    margin:0 0 8px;
-    font-family:'Orbitron',monospace;
-    font-size:16px;
-    font-style:normal;
-    line-height:1.35;
-    letter-spacing:.04em;
-    color:var(--fg);
-  }
-  blockquote cite {
-    color:var(--muted-fg);
-    font-family:'Share Tech Mono',monospace;
-    font-size:10px;
-    font-style:normal;
-    letter-spacing:.12em;
-    text-transform:uppercase;
-  }
-  .auth-card {
-    position:relative;
-    padding:28px 28px 36px;
-    margin:32px 24px 32px 0;
-    background:rgba(18,18,26,.85);
-    border:1px solid var(--border);
-    clip-path:var(--chamfer);
-    box-shadow:var(--neon-sm);
-    align-self:start;
-    backdrop-filter:blur(8px);
-  }
-  .auth-card-chrome {
     display:flex;
     align-items:center;
-    gap:6px;
-    margin:0 0 20px;
-    padding-bottom:12px;
-    border-bottom:1px solid var(--border);
+    gap:12px;
+    padding:12px 14px;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:var(--radius-sm);
+    font-size:14px;
+    color:var(--fg);
   }
-  .auth-card-chrome .dot {
-    width:10px;
-    height:10px;
+  .auth-grid-dot {
+    width:22px;
+    height:22px;
     border-radius:50%;
+    background:var(--accent-soft);
+    color:var(--accent);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-shrink:0;
   }
-  .auth-card-chrome .dot.red { background:var(--destructive); box-shadow:0 0 6px #ff336680; }
-  .auth-card-chrome .dot.yellow { background:#facc15; box-shadow:0 0 6px #facc1580; }
-  .auth-card-chrome .dot.green { background:var(--accent); box-shadow:0 0 6px #00ff8880; }
-  .auth-card-title {
-    margin-left:8px;
-    color:var(--muted-fg);
-    font-family:'Share Tech Mono',monospace;
-    font-size:10px;
-    letter-spacing:.14em;
-    text-transform:uppercase;
+  .auth-hero blockquote {
+    margin:0;
+    padding:18px 20px;
+    border-left:3px solid var(--accent);
+    background:var(--accent-soft);
+    border-radius:0 var(--radius-sm) var(--radius-sm) 0;
+  }
+  .auth-hero blockquote p {
+    margin:0 0 8px;
+    font-size:15px;
+    line-height:1.5;
+    color:var(--fg);
+  }
+  .auth-hero cite {
+    font-style:normal;
+    font-size:12px;
+    color:var(--text-muted);
+    font-family:var(--font-mono);
+  }
+
+  .auth-card {
+    background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0) 40%), var(--card);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:30px 28px 26px;
+    position:relative;
+    box-shadow:0 16px 48px rgba(0,0,0,.4);
   }
   .success-overlay {
     position:absolute;
     inset:0;
-    z-index:20;
-    background:rgba(10,10,15,.95);
-    color:var(--accent);
+    z-index:5;
+    background:rgba(22,26,34,.96);
+    border-radius:var(--radius);
     display:flex;
     flex-direction:column;
     align-items:center;
     justify-content:center;
-    gap:10px;
-    text-align:center;
-    clip-path:var(--chamfer);
+    gap:8px;
   }
   .success-overlay p {
     margin:0;
-    font-family:'Orbitron',monospace;
-    font-size:24px;
-    font-weight:900;
-    letter-spacing:.14em;
-    text-shadow:0 0 16px rgba(0,255,136,.5);
+    font-family:var(--font-display);
+    font-size:22px;
+    font-weight:700;
+    color:var(--accent);
   }
-  .success-overlay span {
-    font-family:'Share Tech Mono',monospace;
-    font-size:11px;
-    letter-spacing:.12em;
-    text-transform:uppercase;
-    color:var(--accent-3);
-  }
+  .success-overlay span { color:var(--muted-fg); font-size:14px; }
+
   .auth-tabs {
     display:grid;
     grid-template-columns:1fr 1fr;
-    gap:8px;
+    gap:4px;
+    padding:4px;
+    background:var(--muted);
+    border-radius:999px;
     margin-bottom:24px;
   }
-  .tab {
-    min-height:44px;
+  .auth-tabs .tab {
+    border:0;
     background:transparent;
-    border:1px solid var(--border);
     color:var(--muted-fg);
-    font-family:'Share Tech Mono',monospace;
-    font-size:12px;
-    font-weight:700;
-    letter-spacing:.14em;
-    text-transform:uppercase;
+    padding:10px 12px;
+    border-radius:999px;
+    font-size:13px;
+    font-weight:600;
     cursor:pointer;
-    clip-path:var(--chamfer-sm);
-    transition:all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    transition:background 150ms ease, color 150ms ease;
   }
-  .tab.active, .tab:hover {
-    border-color:var(--accent);
-    color:var(--accent);
-    box-shadow:var(--neon-sm);
-    background:rgba(0,255,136,.08);
+  .auth-tabs .tab.active {
+    background:var(--gradient-accent);
+    color:#06120E;
   }
-  .auth-card-heading {
-    margin-bottom:24px;
-    border-bottom:1px solid var(--border);
-    padding-bottom:18px;
-  }
+
   .auth-card-heading h3 {
-    margin:0 0 8px;
-    font-family:'Orbitron',monospace;
-    font-size:28px;
-    font-weight:900;
-    line-height:1.1;
-    letter-spacing:.08em;
-    text-transform:uppercase;
-    color:var(--fg);
+    margin:0 0 6px;
+    font-family:var(--font-display);
+    font-size:22px;
+    font-weight:700;
+    letter-spacing:-0.02em;
   }
   .auth-card-heading p {
-    margin:0;
+    margin:0 0 20px;
     color:var(--muted-fg);
-    font-family:'JetBrains Mono',monospace;
-    font-size:13px;
-    line-height:1.6;
+    font-size:14px;
   }
-  .auth-form {
-    display:flex;
-    flex-direction:column;
-    gap:14px;
-  }
-  .auth-field { position:relative; }
+
+  .auth-form { display:flex; flex-direction:column; gap:14px; }
   .auth-field label {
     display:block;
-    margin-bottom:6px;
+    margin-bottom:7px;
+    font-size:12.5px;
+    font-weight:500;
     color:var(--muted-fg);
-    font-family:'Share Tech Mono',monospace;
-    font-size:10px;
-    letter-spacing:.16em;
-    text-transform:uppercase;
-  }
-  .auth-field::before {
-    content:'>';
-    position:absolute;
-    left:12px;
-    top:32px;
-    color:var(--accent);
-    font-family:'Share Tech Mono',monospace;
-    font-size:13px;
-    z-index:1;
-    pointer-events:none;
-    text-shadow:0 0 6px rgba(0,255,136,.5);
   }
   .auth-input {
     width:100%;
-    background:var(--bg);
+    background:var(--muted);
     border:1px solid var(--border);
-    padding:11px 12px 11px 28px;
-    color:var(--accent);
-    font-family:'JetBrains Mono',monospace;
-    font-size:13px;
-    outline:none;
-    clip-path:var(--chamfer-sm);
-    transition:all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius:var(--radius-sm);
+    padding:11px 13px;
+    color:var(--fg);
+    font-size:14px;
+    transition:border-color 150ms ease, box-shadow 150ms ease;
   }
-  .auth-input::placeholder { color:var(--muted-fg); }
+  .auth-input::placeholder { color:var(--text-muted); }
   .auth-input:focus {
     border-color:var(--accent);
-    box-shadow:var(--neon);
+    outline:none;
+    box-shadow:0 0 0 3px var(--accent-soft);
   }
-  .auth-link-row {
-    display:flex;
-    justify-content:flex-end;
-  }
-  .auth-link-row a, .auth-terms a {
-    color:var(--accent-3);
-    text-decoration-color:var(--accent);
-    text-decoration-thickness:1px;
-    text-underline-offset:4px;
-  }
-  .auth-link-row a:hover, .auth-terms a:hover { color:var(--accent); }
-  .submit-btn {
-    min-height:48px;
-    margin-top:4px;
-    padding:13px 16px;
-    background:var(--accent);
-    border:2px solid var(--accent);
-    color:var(--bg);
-    font-family:'Orbitron',monospace;
-    font-size:12px;
-    font-weight:800;
-    letter-spacing:.16em;
-    text-transform:uppercase;
+
+  .auth-link-row { text-align:right; margin-top:-4px; }
+  .auth-link-row a, .auth-terms a, .auth-switch button {
+    color:var(--accent);
+    background:none;
+    border:0;
+    padding:0;
+    font:inherit;
     cursor:pointer;
-    clip-path:var(--chamfer-sm);
-    transition:all 150ms cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow:var(--neon);
+    text-decoration:none;
   }
-  .submit-btn:hover:not(:disabled) {
-    filter:brightness(1.12);
-    box-shadow:var(--neon-lg);
+  .auth-link-row a:hover, .auth-terms a:hover, .auth-switch button:hover {
+    color:var(--accent-hover);
+    text-decoration:underline;
   }
-  .submit-btn:disabled { opacity:.5; cursor:not-allowed; box-shadow:none; }
+
+  .submit-btn {
+    width:100%;
+    min-height:46px;
+    margin-top:4px;
+    background:var(--gradient-accent);
+    border:0;
+    border-radius:999px;
+    color:#06120E;
+    font-family:var(--font-display);
+    font-size:15px;
+    font-weight:700;
+    cursor:pointer;
+    box-shadow:0 8px 24px rgba(45,212,168,.28);
+    transition:transform .15s ease, box-shadow .15s ease, filter .15s ease;
+  }
+  .submit-btn:hover:not(:disabled) { filter:brightness(1.08); transform:translateY(-1px); }
+  .submit-btn:disabled { opacity:.55; cursor:not-allowed; box-shadow:none; }
+
   .auth-error {
     margin:0;
     padding:10px 12px;
+    border-radius:var(--radius-sm);
     border:1px solid var(--destructive);
-    background:rgba(255,51,102,.08);
+    background:rgba(232,93,93,.1);
     color:var(--destructive);
-    font-family:'JetBrains Mono',monospace;
-    font-size:12px;
-    line-height:1.5;
-    clip-path:var(--chamfer-sm);
+    font-size:13px;
   }
   .auth-terms, .auth-switch {
-    margin:0;
-    color:var(--muted-fg);
-    font-family:'Share Tech Mono',monospace;
-    font-size:11px;
-    line-height:1.6;
-  }
-  .auth-switch {
-    margin-top:22px;
+    margin:4px 0 0;
+    color:var(--text-muted);
+    font-size:12px;
+    line-height:1.5;
     text-align:center;
   }
-  .auth-switch button {
-    background:transparent;
-    border:0;
-    color:var(--accent);
-    cursor:pointer;
-    font-weight:700;
-    text-decoration:underline;
-    text-decoration-color:var(--accent);
-    text-decoration-thickness:1px;
-    text-underline-offset:4px;
-  }
-  .password-strength { margin-top:10px; }
+
+  .password-strength { margin-top:8px; }
   .strength-bars {
     display:flex;
     align-items:center;
-    gap:4px;
+    gap:6px;
     margin-bottom:8px;
   }
   .strength-bars span {
     flex:1;
     height:4px;
-    border:1px solid var(--border);
-    background:var(--bg);
+    border-radius:2px;
+    background:var(--border);
   }
-  .strength-bars span.filled {
-    background:var(--accent);
-    box-shadow:var(--neon-sm);
-    border-color:var(--accent);
-  }
+  .strength-bars span.filled { background:var(--accent); }
   .strength-bars b {
+    font-size:11px;
+    color:var(--muted-fg);
+    font-weight:600;
     min-width:48px;
-    margin-left:6px;
-    color:var(--accent);
-    font-family:'Share Tech Mono',monospace;
-    font-size:10px;
-    text-transform:uppercase;
+    text-align:right;
   }
   .strength-checks {
     display:grid;
     grid-template-columns:1fr 1fr;
-    gap:5px;
+    gap:4px 10px;
   }
   .strength-checks span {
-    color:var(--muted-fg);
-    font-family:'Share Tech Mono',monospace;
-    font-size:10px;
+    font-size:11px;
+    color:var(--text-muted);
+    display:flex;
+    gap:6px;
+    align-items:center;
   }
   .strength-checks span.ok { color:var(--accent); }
-  .strength-checks i {
-    display:inline-block;
-    width:24px;
-    margin-right:5px;
-    border:1px solid currentColor;
-    font-style:normal;
-    text-align:center;
-  }
+  .strength-checks i { font-style:normal; width:12px; }
 
-  @media (max-width: 940px) {
-    .auth-layout { grid-template-columns:1fr; }
-    .auth-hero { padding:36px 24px; }
-    .auth-card { margin:0 16px 40px; padding:24px 20px 36px; }
-  }
-  @media (max-width: 560px) {
-    .auth-masthead { padding:12px 16px; }
-    .auth-masthead h1 { font-size:20px; letter-spacing:.1em; }
-    .auth-hero h2 { font-size:32px; letter-spacing:.04em; }
-    .auth-grid { grid-template-columns:1fr; }
-    .auth-card-heading h3 { font-size:22px; }
-    .strength-checks { grid-template-columns:1fr; }
+  @media (max-width: 860px) {
+    .auth-layout { grid-template-columns:1fr; gap:32px; padding:28px 16px 48px; }
+    .auth-hero blockquote { display:none; }
   }
 `;

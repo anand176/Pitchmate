@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { apiPitchmate, apiDownloadArtifact } from "../pitchmateApi";
 import { formatMessage } from "../theme";
+import { SendIcon, CloseIcon, SparklesIcon, CheckCircleIcon } from "../icons";
 
 const STARTER_PROMPTS = [
     "Help me validate my product idea",
@@ -91,7 +92,9 @@ export default function ChatPanel({ open, onClose, messages, setMessages, sessio
             <div className={`chat-overlay ${open ? "open" : ""}`} onClick={onClose} />
             <div className={`chat-panel ${open ? "open" : ""}`} role="dialog" aria-label="Pitchmate chat">
                 <div className="chat-panel-header">
-                    <div className="dash-logo-mark" style={{ width: 28, height: 28, fontSize: 12 }}>P</div>
+                    <div className="dash-logo-mark" style={{ width: 30, height: 30 }}>
+                        <SparklesIcon size={15} />
+                    </div>
                     <h3>Ask Pitchmate</h3>
                     {sessionId && (
                         <span className="dash-tag" style={{ marginLeft: 6 }}>session active</span>
@@ -99,20 +102,22 @@ export default function ChatPanel({ open, onClose, messages, setMessages, sessio
                     <button
                         type="button"
                         className="dash-btn-ghost"
-                        style={{ marginLeft: sessionId ? 8 : "auto", padding: "4px 10px" }}
+                        style={{ marginLeft: sessionId ? 8 : "auto", padding: "5px 12px", minHeight: 32 }}
                         onClick={() => { setMessages([]); setSessionId(null); setInput(""); }}
                         title="Start a new chat"
                     >
                         New
                     </button>
-                    <button type="button" className="chat-panel-close" onClick={onClose} title="Close chat" aria-label="Close chat">X</button>
+                    <button type="button" className="chat-panel-close" onClick={onClose} title="Close chat" aria-label="Close chat">
+                        <CloseIcon size={16} />
+                    </button>
                 </div>
 
                 <div className="chat-messages" ref={chatRef}>
                     {showWelcome && (
                         <div className="chat-welcome">
                             <div className="chat-welcome-icon">
-                                    <span style={{ fontWeight: 900, fontSize: 18, fontFamily: "'Orbitron', monospace", color: "#00ff88", textShadow: "0 0 8px rgba(0,255,136,.6)" }}>P</span>
+                                <SparklesIcon size={20} />
                             </div>
                             <h4>Ask me anything</h4>
                             <p>
@@ -146,7 +151,7 @@ export default function ChatPanel({ open, onClose, messages, setMessages, sessio
                         return (
                             <div key={i} className={`chat-message ${msg.role}`}>
                                 <div className={`chat-avatar ${msg.role === "assistant" ? "ai" : "user-av"}`}>
-                                    {msg.role === "assistant" ? <span style={{ fontWeight: 800, fontSize: 11 }}>P</span> : "U"}
+                                    {msg.role === "assistant" ? <SparklesIcon size={13} /> : "U"}
                                 </div>
                                 <div className="chat-bubble-wrap">
                                     <div
@@ -197,7 +202,7 @@ export default function ChatPanel({ open, onClose, messages, setMessages, sessio
                                 const state = i < activeStepIdx ? "done" : i === activeStepIdx ? "active" : "pending";
                                 return (
                                     <div key={step.id} className={`chat-step ${state}`}>
-                                        <div className="chat-step-dot">{state === "done" ? "OK" : state === "active" ? ">>" : "--"}</div>
+                                        <div className="chat-step-dot">{state === "done" && <CheckCircleIcon size={10} strokeWidth={2.5} style={{ color: "#0A0B0D" }} />}</div>
                                         {step.label}
                                     </div>
                                 );
@@ -218,9 +223,7 @@ export default function ChatPanel({ open, onClose, messages, setMessages, sessio
                             rows={1}
                         />
                         <button className="chat-send-btn" onClick={() => sendMessage()} disabled={!input.trim() || loading} title="Send (Enter)" aria-label="Send message">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
-                            </svg>
+                            <SendIcon size={15} />
                         </button>
                     </div>
                     <p className="chat-hint">

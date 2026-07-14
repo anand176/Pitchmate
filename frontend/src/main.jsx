@@ -33,13 +33,12 @@ function App() {
     if (initializing) {
         return (
             <div style={{
-                minHeight: "100vh", background: "#0a0a0f",
+                minHeight: "100vh", background: "#0A0B0D",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                fontFamily: "'Share Tech Mono', 'JetBrains Mono', monospace", color: "#00ff88",
-                fontSize: 12, letterSpacing: 2, textTransform: "uppercase",
-                textShadow: "0 0 10px rgba(0,255,136,.5)",
+                fontFamily: "'Inter', system-ui, sans-serif", color: "#9AA1AC",
+                fontSize: 14,
             }}>
-                Booting terminal...
+                Loading Pitchmate…
             </div>
         );
     }
