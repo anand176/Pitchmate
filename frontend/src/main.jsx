@@ -33,9 +33,9 @@ function App() {
     if (initializing) {
         return (
             <div style={{
-                minHeight: "100vh", background: "#0A0B0D",
+                minHeight: "100vh", background: "#F5F7FA",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                fontFamily: "'Inter', system-ui, sans-serif", color: "#9AA1AC",
+                fontFamily: "'Inter', system-ui, sans-serif", color: "#64748B",
                 fontSize: 14,
             }}>
                 Loading Pitchmate…

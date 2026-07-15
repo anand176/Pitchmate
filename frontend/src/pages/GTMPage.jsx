@@ -86,19 +86,19 @@ export default function GTMPage() {
                             {result.primary_icp && (
                                 <>
                                     <div className="dash-section-title">Primary ICP</div>
-                                    <p style={{ fontSize: 13, color: "#9AA3B2", lineHeight: 1.6 }}>{result.primary_icp}</p>
+                                    <p style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6 }}>{result.primary_icp}</p>
                                 </>
                             )}
                             {result.early_adopter_profile && (
                                 <>
                                     <div className="dash-section-title">Early Adopter Profile</div>
-                                    <p style={{ fontSize: 13, color: "#9AA3B2", lineHeight: 1.6 }}>{result.early_adopter_profile}</p>
+                                    <p style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6 }}>{result.early_adopter_profile}</p>
                                 </>
                             )}
                             {result.recommended_sales_motion && (
                                 <>
                                     <div className="dash-section-title">Recommended Sales Motion</div>
-                                    <p style={{ fontSize: 13, color: "#9AA3B2", lineHeight: 1.6 }}>{result.recommended_sales_motion}</p>
+                                    <p style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6 }}>{result.recommended_sales_motion}</p>
                                 </>
                             )}
                         </div>

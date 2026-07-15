@@ -107,7 +107,7 @@ export default function DeckPage() {
                             {result.sections?.map((s) => (
                                 <div key={s.key} style={{ marginBottom: 14 }}>
                                     <div className="dash-section-title">{s.title}</div>
-                                    <p style={{ fontSize: 13, color: "#9AA3B2", lineHeight: 1.6 }}>{s.content}</p>
+                                    <p style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6 }}>{s.content}</p>
                                 </div>
                             ))}
                         </div>

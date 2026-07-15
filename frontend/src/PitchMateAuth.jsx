@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { apiSignup, apiLogin } from "./pitchmateApi";
-import { SparklesIcon, CheckCircleIcon } from "./icons";
+import { CheckCircleIcon, LogoMark } from "./icons";
 
 /**
  * PitchMateAuth — calm dark auth for Pitchmate's self-hosted JWT.
@@ -48,7 +48,7 @@ export default function PitchMateAuth({ onAuthenticated }) {
             <style>{CSS}</style>
 
             <header className="auth-masthead">
-                <div className="auth-logo-mark"><SparklesIcon size={18} /></div>
+                <div className="auth-logo-mark"><LogoMark size={20} /></div>
                 <div>
                     <h1>Pitchmate</h1>
                     <p>AI pitch co-pilot for founders</p>
@@ -225,19 +225,23 @@ const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Outfit:wght@500;600;700;800&display=swap');
 
   :root {
-    --bg: #0A0B0D;
-    --fg: #F2F3F5;
-    --card: #131519;
-    --muted: #191C22;
-    --muted-fg: #9AA1AC;
-    --text-muted: #686F7A;
-    --accent: #2DD4A8;
-    --accent-hover: #4EE2BA;
-    --accent-soft: rgba(45, 212, 168, 0.12);
-    --gradient-accent: linear-gradient(135deg, #22C39A 0%, #2DD4A8 55%, #5FE8C4 100%);
-    --border: rgba(255, 255, 255, 0.08);
-    --hover: #1C2027;
-    --destructive: #F0625F;
+    --bg: #EEF1F7;
+    --fg: #0F172A;
+    --card: #FFFFFF;
+    --muted: #E4E9F2;
+    --muted-fg: #64748B;
+    --text-muted: #94A3B8;
+    --accent: #2563EB;
+    --accent-ink: #1D4ED8;
+    --accent-hover: #1D4ED8;
+    --accent-soft: rgba(37, 99, 235, 0.08);
+    --accent-2: #B45309;
+    --accent-2-soft: rgba(180, 83, 9, 0.10);
+    --gradient-accent: linear-gradient(135deg, #1D4ED8 0%, #2563EB 100%);
+    --on-accent: #FFFFFF;
+    --border: #DCE3EC;
+    --hover: #E9EEF5;
+    --destructive: #B91C1C;
     --radius: 18px;
     --radius-sm: 10px;
     --font-body: 'Inter', system-ui, sans-serif;
@@ -257,8 +261,8 @@ const CSS = `
   .auth-root {
     min-height:100vh;
     background:
-      radial-gradient(ellipse at 20% 0%, rgba(45,212,168,.08) 0%, transparent 50%),
-      radial-gradient(ellipse at 100% 80%, rgba(91,141,239,.06) 0%, transparent 45%),
+      radial-gradient(ellipse at 20% 0%, rgba(37,99,235,.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 100% 80%, rgba(67,56,202,.05) 0%, transparent 45%),
       var(--bg);
     color:var(--fg);
     font-family:var(--font-body);
@@ -271,7 +275,7 @@ const CSS = `
     display:flex;
     align-items:center;
     gap:14px;
-    background:rgba(15,17,21,.9);
+    background:rgba(255,255,255,.85);
     backdrop-filter:blur(12px);
   }
   .auth-logo-mark {
@@ -279,11 +283,11 @@ const CSS = `
     height:40px;
     border-radius:var(--radius-sm);
     background:var(--gradient-accent);
-    color:#06120E;
+    color:var(--on-accent);
     display:flex;
     align-items:center;
     justify-content:center;
-    box-shadow:0 6px 18px rgba(45,212,168,.3);
+    box-shadow:0 6px 18px rgba(37,99,235,.3);
     flex-shrink:0;
   }
   .auth-masthead h1 {
@@ -315,7 +319,7 @@ const CSS = `
     font-size:11px;
     letter-spacing:.14em;
     text-transform:uppercase;
-    color:var(--accent);
+    color:var(--accent-ink);
     margin-bottom:14px;
   }
   .auth-hero h2 {
@@ -347,6 +351,7 @@ const CSS = `
     background:var(--card);
     border:1px solid var(--border);
     border-radius:var(--radius-sm);
+    box-shadow:0 1px 3px rgba(15,23,42,.05);
     font-size:14px;
     color:var(--fg);
   }
@@ -355,7 +360,7 @@ const CSS = `
     height:22px;
     border-radius:50%;
     background:var(--accent-soft);
-    color:var(--accent);
+    color:var(--accent-ink);
     display:flex;
     align-items:center;
     justify-content:center;
@@ -364,8 +369,8 @@ const CSS = `
   .auth-hero blockquote {
     margin:0;
     padding:18px 20px;
-    border-left:3px solid var(--accent);
-    background:var(--accent-soft);
+    border-left:3px solid var(--accent-2);
+    background:var(--accent-2-soft);
     border-radius:0 var(--radius-sm) var(--radius-sm) 0;
   }
   .auth-hero blockquote p {
@@ -382,18 +387,18 @@ const CSS = `
   }
 
   .auth-card {
-    background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0) 40%), var(--card);
+    background:var(--card);
     border:1px solid var(--border);
     border-radius:var(--radius);
     padding:30px 28px 26px;
     position:relative;
-    box-shadow:0 16px 48px rgba(0,0,0,.4);
+    box-shadow:0 16px 48px rgba(15,23,42,.1);
   }
   .success-overlay {
     position:absolute;
     inset:0;
     z-index:5;
-    background:rgba(22,26,34,.96);
+    background:rgba(255,255,255,.97);
     border-radius:var(--radius);
     display:flex;
     flex-direction:column;
@@ -406,7 +411,7 @@ const CSS = `
     font-family:var(--font-display);
     font-size:22px;
     font-weight:700;
-    color:var(--accent);
+    color:var(--accent-ink);
   }
   .success-overlay span { color:var(--muted-fg); font-size:14px; }
 
@@ -432,7 +437,7 @@ const CSS = `
   }
   .auth-tabs .tab.active {
     background:var(--gradient-accent);
-    color:#06120E;
+    color:var(--on-accent);
   }
 
   .auth-card-heading h3 {
@@ -475,7 +480,7 @@ const CSS = `
 
   .auth-link-row { text-align:right; margin-top:-4px; }
   .auth-link-row a, .auth-terms a, .auth-switch button {
-    color:var(--accent);
+    color:var(--accent-ink);
     background:none;
     border:0;
     padding:0;
@@ -495,23 +500,23 @@ const CSS = `
     background:var(--gradient-accent);
     border:0;
     border-radius:999px;
-    color:#06120E;
+    color:var(--on-accent);
     font-family:var(--font-display);
     font-size:15px;
     font-weight:700;
     cursor:pointer;
-    box-shadow:0 8px 24px rgba(45,212,168,.28);
+    box-shadow:0 8px 24px rgba(37,99,235,.28);
     transition:transform .15s ease, box-shadow .15s ease, filter .15s ease;
   }
-  .submit-btn:hover:not(:disabled) { filter:brightness(1.08); transform:translateY(-1px); }
+  .submit-btn:hover:not(:disabled) { filter:brightness(1.04); transform:translateY(-1px); }
   .submit-btn:disabled { opacity:.55; cursor:not-allowed; box-shadow:none; }
 
   .auth-error {
     margin:0;
     padding:10px 12px;
     border-radius:var(--radius-sm);
-    border:1px solid var(--destructive);
-    background:rgba(232,93,93,.1);
+    border:1px solid rgba(185,28,28,.3);
+    background:rgba(185,28,28,.08);
     color:var(--destructive);
     font-size:13px;
   }
@@ -556,7 +561,7 @@ const CSS = `
     gap:6px;
     align-items:center;
   }
-  .strength-checks span.ok { color:var(--accent); }
+  .strength-checks span.ok { color:var(--accent-ink); }
   .strength-checks i { font-style:normal; width:12px; }
 
   @media (max-width: 860px) {

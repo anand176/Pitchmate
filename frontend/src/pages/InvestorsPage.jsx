@@ -64,7 +64,7 @@ export default function InvestorsPage() {
                     {result && (
                         <div className="dash-card">
                             <div className="dash-tag">Check size: {result.typical_check_size}</div>
-                            <p style={{ fontSize: 13, color: "#9AA3B2", lineHeight: 1.6, marginTop: 10 }}>{result.what_investors_look_for}</p>
+                            <p style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6, marginTop: 10 }}>{result.what_investors_look_for}</p>
 
                             {result.tiers?.length > 0 && (
                                 <>
@@ -77,7 +77,7 @@ export default function InvestorsPage() {
                                             <div style={{ marginBottom: 4 }}>
                                                 {tier.investor_types?.map((t, j) => <span key={j} className="dash-tag">{t}</span>)}
                                             </div>
-                                            {tier.rationale && <p style={{ fontSize: 12, color: "#9AA3B2", lineHeight: 1.5 }}>{tier.rationale}</p>}
+                                            {tier.rationale && <p style={{ fontSize: 12, color: "#64748B", lineHeight: 1.5 }}>{tier.rationale}</p>}
                                         </div>
                                     ))}
                                 </>
@@ -93,7 +93,7 @@ export default function InvestorsPage() {
                             {result.outreach_strategy && (
                                 <>
                                     <div className="dash-section-title">Outreach Strategy</div>
-                                    <p style={{ fontSize: 13, color: "#9AA3B2", lineHeight: 1.6 }}>{result.outreach_strategy}</p>
+                                    <p style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6 }}>{result.outreach_strategy}</p>
                                 </>
                             )}
                             {result.red_flags?.length > 0 && (

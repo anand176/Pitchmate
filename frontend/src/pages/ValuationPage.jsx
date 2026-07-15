@@ -109,7 +109,7 @@ export default function ValuationPage() {
                             {result.negotiation_guidance && (
                                 <>
                                     <div className="dash-section-title">Negotiation Guidance</div>
-                                    <p style={{ fontSize: 13, color: "#9AA3B2", lineHeight: 1.6 }}>{result.negotiation_guidance}</p>
+                                    <p style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6 }}>{result.negotiation_guidance}</p>
                                 </>
                             )}
                             {result.caveat && (

@@ -5,7 +5,7 @@ import { DASHBOARD_STYLES } from "../theme";
 import ChatPanel from "./ChatPanel";
 import {
     HomeIcon, TrendingUpIcon, UsersIcon, TargetIcon, HandshakeIcon,
-    CoinsIcon, FileTextIcon, SettingsIcon, LogOutIcon, MessageCircleIcon,
+    CoinsIcon, FileTextIcon, SettingsIcon, LogOutIcon, MessageCircleIcon, LogoMark,
 } from "../icons";
 
 const NAV_ITEMS = [
@@ -105,7 +105,7 @@ export default function DashboardLayout({ user }) {
             <style>{DASHBOARD_STYLES}</style>
 
             <header className="dash-header">
-                <div className="dash-logo-mark">P</div>
+                <div className="dash-logo-mark"><LogoMark size={20} /></div>
                 <div className="dash-header-text">
                     <h1>Pitchmate</h1>
                     <p>AI pitch co-pilot</p>

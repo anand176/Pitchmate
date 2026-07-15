@@ -80,11 +80,11 @@ export default function MarketPage() {
                             )}
 
                             <div className="dash-section-title">TAM Assessment</div>
-                            <p style={{ fontSize: 13, color: "#9AA3B2", lineHeight: 1.6 }}>{result.tam_assessment}</p>
+                            <p style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6 }}>{result.tam_assessment}</p>
                             <div className="dash-section-title">SAM Assessment</div>
-                            <p style={{ fontSize: 13, color: "#9AA3B2", lineHeight: 1.6 }}>{result.sam_assessment}</p>
+                            <p style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6 }}>{result.sam_assessment}</p>
                             <div className="dash-section-title">SOM Assessment</div>
-                            <p style={{ fontSize: 13, color: "#9AA3B2", lineHeight: 1.6 }}>{result.som_assessment}</p>
+                            <p style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6 }}>{result.som_assessment}</p>
 
                             {result.strengths?.length > 0 && (
                                 <>

@@ -153,3 +153,17 @@ export const PlusIcon = (props) => (
         <line x1="5" y1="12" x2="19" y2="12" />
     </Icon>
 );
+
+/**
+ * Brand mark — an ascending staircase with a rounded ramp tip. Reads as both
+ * a traction chart and a launch trajectory. Filled (not stroke), so pass a
+ * `color` via CSS `color` on the wrapper — it uses currentColor.
+ */
+export const LogoMark = ({ size = 24, ...rest }) => (
+    <svg width={size} height={size} viewBox="0 0 100 100" fill="none" {...rest}>
+        <path
+            d="M22,84 L22,64 L44,64 L44,44 L66,44 L66,28 Q76,18 80,26 L80,84 Z"
+            fill="currentColor"
+        />
+    </svg>
+);

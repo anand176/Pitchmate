@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { apiPitchmate, apiDownloadArtifact } from "../pitchmateApi";
 import { formatMessage } from "../theme";
-import { SendIcon, CloseIcon, SparklesIcon, CheckCircleIcon } from "../icons";
+import { SendIcon, CloseIcon, SparklesIcon, CheckCircleIcon, LogoMark } from "../icons";
 
 const STARTER_PROMPTS = [
     "Help me validate my product idea",
@@ -93,7 +93,7 @@ export default function ChatPanel({ open, onClose, messages, setMessages, sessio
             <div className={`chat-panel ${open ? "open" : ""}`} role="dialog" aria-label="Pitchmate chat">
                 <div className="chat-panel-header">
                     <div className="dash-logo-mark" style={{ width: 30, height: 30 }}>
-                        <SparklesIcon size={15} />
+                        <LogoMark size={16} />
                     </div>
                     <h3>Ask Pitchmate</h3>
                     {sessionId && (
@@ -202,7 +202,7 @@ export default function ChatPanel({ open, onClose, messages, setMessages, sessio
                                 const state = i < activeStepIdx ? "done" : i === activeStepIdx ? "active" : "pending";
                                 return (
                                     <div key={step.id} className={`chat-step ${state}`}>
-                                        <div className="chat-step-dot">{state === "done" && <CheckCircleIcon size={10} strokeWidth={2.5} style={{ color: "#0A0B0D" }} />}</div>
+                                        <div className="chat-step-dot">{state === "done" && <CheckCircleIcon size={10} strokeWidth={2.5} style={{ color: "#FFFFFF" }} />}</div>
                                         {step.label}
                                     </div>
                                 );
