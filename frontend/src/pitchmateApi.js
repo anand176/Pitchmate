@@ -316,4 +316,17 @@ export function apiDashboardDeckExport(sections, format = "pdf") {
     return _postDashboard("deck/export", { ...sections, format });
 }
 
+/**
+ * Fetch the current user's saved analyses (latest per module), so feature pages
+ * can restore prior results and pre-fill their forms on return.
+ * @returns {{ results: Record<string, { module, inputs, result, updated_at }>, completed_modules: string[] }}
+ */
+export async function apiGetAnalyses() {
+    const headers = await authHeaders();
+    const res = await fetch(`${BACKEND}/dashboard/results`, { method: "GET", headers });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data?.detail || `Results fetch failed (${res.status})`);
+    return data;
+}
+
 

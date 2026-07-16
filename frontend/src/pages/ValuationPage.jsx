@@ -1,17 +1,40 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { apiDashboardValuation } from "../pitchmateApi";
 import { CoinsIcon } from "../icons";
+import { useAnalysisModule, relativeTime } from "../useAnalysisModule";
 
 const STAGES = ["Pre-Seed", "Seed", "Series A", "Series B+"];
 
+// Map the profile's lifecycle_stage onto a valuation funding stage.
+const STAGE_FROM_LIFECYCLE = {
+    idea: "Pre-Seed", validating: "Pre-Seed", building: "Pre-Seed", pre_revenue: "Pre-Seed",
+    revenue: "Seed", raising: "Seed", angel_backed: "Seed", seed_closed: "Series A",
+    series_a_plus: "Series B+",
+};
+
 export default function ValuationPage() {
+    const { profile, saved, loadingSaved, reportRun } = useAnalysisModule("valuation");
     const [form, setForm] = useState({
         stage: "Seed", sector: "", arr: "", growth_rate_yoy: "",
         team_strength: 3, traction_strength: 3,
     });
     const [result, setResult] = useState(null);
+    const [lastRun, setLastRun] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [hydrated, setHydrated] = useState(false);
+
+    // Hydrate once saved analysis has loaded: saved inputs win, else profile defaults.
+    useEffect(() => {
+        if (loadingSaved || hydrated) return;
+        const defaults = {
+            sector: profile?.industry || "",
+            stage: STAGE_FROM_LIFECYCLE[profile?.lifecycle_stage] || "Seed",
+        };
+        setForm((f) => ({ ...f, ...defaults, ...(saved?.inputs || {}) }));
+        if (saved?.result) { setResult(saved.result); setLastRun(saved.updated_at); }
+        setHydrated(true);
+    }, [loadingSaved, saved, profile, hydrated]);
 
     const update = (k, v) => setForm((f) => ({ ...f, [k]: v }));
     const canSubmit = form.sector.trim();
@@ -23,6 +46,8 @@ export default function ValuationPage() {
         try {
             const data = await apiDashboardValuation(form);
             setResult(data);
+            setLastRun(new Date().toISOString());
+            reportRun(data, form);
         } catch (err) {
             setError(err.message || "Valuation estimate failed.");
         } finally {
@@ -91,6 +116,7 @@ export default function ValuationPage() {
                     )}
                     {result && (
                         <div className="dash-card">
+                            {lastRun && <div className="dash-lastrun">Last run · {relativeTime(lastRun)}</div>}
                             <div className="dash-valuation-range">{result.valuation_low_formatted} - {result.valuation_high_formatted}</div>
                             <div className="dash-valuation-sub">Pre-money | methodology: {result.methodology?.replaceAll("_", " ")}</div>
 
@@ -113,7 +139,7 @@ export default function ValuationPage() {
                                 </>
                             )}
                             {result.caveat && (
-                                <p style={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", color: "#6B7380", marginTop: 16, lineHeight: 1.6 }}>
+                                <p style={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", color: "#94A3B8", marginTop: 16, lineHeight: 1.6 }}>
                                     {result.caveat}
                                 </p>
                             )}

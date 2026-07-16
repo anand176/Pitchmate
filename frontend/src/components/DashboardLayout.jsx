@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, Navigate, useLocation } from "react-router-dom";
 import { apiLogout, apiGetProfile } from "../pitchmateApi";
 import { DASHBOARD_STYLES } from "../theme";
@@ -6,6 +6,7 @@ import ChatPanel from "./ChatPanel";
 import {
     HomeIcon, TrendingUpIcon, UsersIcon, TargetIcon, HandshakeIcon,
     CoinsIcon, FileTextIcon, SettingsIcon, LogOutIcon, MessageCircleIcon, LogoMark,
+    CheckCircleIcon,
 } from "../icons";
 
 const NAV_ITEMS = [
@@ -31,6 +32,17 @@ export default function DashboardLayout({ user }) {
     const [profile, setProfile] = useState(null);
     const [profileLoaded, setProfileLoaded] = useState(false);
     const [nudgeSent, setNudgeSent] = useState(false);
+    const [toasts, setToasts] = useState([]);
+    const toastId = useRef(0);
+
+    // Lightweight toast for cross-page feedback (e.g. "Market validated · +10%").
+    const notify = useCallback((message, { gain } = {}) => {
+        const id = ++toastId.current;
+        setToasts((prev) => [...prev, { id, message, gain }]);
+        setTimeout(() => {
+            setToasts((prev) => prev.filter((t) => t.id !== id));
+        }, 4200);
+    }, []);
 
     const refreshProfile = useCallback(async () => {
         try {
@@ -57,7 +69,7 @@ export default function DashboardLayout({ user }) {
             setMessages([{
                 role: "assistant",
                 content:
-                    `Profile loaded for **${company}**. Ask me to validate market or draft your deck.`,
+                    `Loaded **${company}**. Use the tabs for market, investors, and deck — or ask me here to refine any of them.`,
                 isSystem: true,
             }]);
             setNudgeSent(true);
@@ -161,11 +173,24 @@ export default function DashboardLayout({ user }) {
                             setSessionId,
                             profile,
                             refreshProfile,
+                            notify,
                             openChat: () => setChatOpen(true),
                         }}
                     />
                 </main>
             </div>
+
+            {toasts.length > 0 && (
+                <div className="dash-toast-stack" aria-live="polite">
+                    {toasts.map((t) => (
+                        <div key={t.id} className="dash-toast success">
+                            <span className="toast-mark"><CheckCircleIcon size={12} strokeWidth={2.5} /></span>
+                            <span>{t.message}</span>
+                            {t.gain ? <span className="toast-gain">{t.gain}</span> : null}
+                        </div>
+                    ))}
+                </div>
+            )}
 
             {!chatOpen && !onOnboarding && (
                 <button className="chat-fab" onClick={() => setChatOpen(true)} title="Chat with Pitchmate" aria-label="Chat with Pitchmate">

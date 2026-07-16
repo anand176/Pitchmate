@@ -156,3 +156,20 @@ class DeckExportRequest(DeckRequest):
 class DeckExportResult(BaseModel):
     filename: str
     download_url: str
+
+
+# ─── Saved analyses (persistence) ────────────────────────────────────────────
+
+class SavedAnalysis(BaseModel):
+    module: str
+    inputs: dict = Field(default_factory=dict)
+    result: dict = Field(default_factory=dict)
+    updated_at: Optional[str] = None
+
+
+class SavedAnalysesResponse(BaseModel):
+    results: dict[str, SavedAnalysis] = Field(
+        default_factory=dict,
+        description="Saved analyses keyed by module name (market, competition, gtm, investors, valuation, deck).",
+    )
+    completed_modules: list[str] = Field(default_factory=list)

@@ -23,11 +23,14 @@ from typing import Annotated, TypeVar
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.dependencies import get_current_user
 from agents.langgraph_base import create_google_llm
 from core.config import config
 from core.mlflow_tracking import MLflowCallbackHandler, log_metric, log_params, track_run
+from db.base import get_db_session
+from dashboard.store import get_analyses, save_analysis
 from dashboard.schemas import (
     CompetitionRequest,
     CompetitionResult,
@@ -41,6 +44,8 @@ from dashboard.schemas import (
     InvestorResult,
     MarketSizeRequest,
     MarketSizeResult,
+    SavedAnalysis,
+    SavedAnalysesResponse,
     ValuationRequest,
     ValuationResult,
 )
@@ -122,6 +127,7 @@ def _raise_500(exc: Exception, action: str):
 async def analyze_market(
     req: MarketSizeRequest,
     current_user: Annotated[dict, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db_session)],
 ):
     """Validate TAM/SAM/SOM claims and return a structured assessment."""
     from agents.sub_agents.market_validator.tools import validate_market_size
@@ -132,6 +138,7 @@ async def analyze_market(
             context["instructions_for_agent"], MarketSizeResult, "dashboard_market_agent", endpoint="market"
         )
         result.automatic_flags = context.get("automatic_flags", [])
+        await save_analysis(db, current_user["id"], "market", req.model_dump(), result.model_dump())
         return result
     except Exception as exc:
         _raise_500(exc, "Market analysis")
@@ -143,6 +150,7 @@ async def analyze_market(
 async def analyze_competition(
     req: CompetitionRequest,
     current_user: Annotated[dict, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db_session)],
 ):
     """Evaluate the competitive landscape and return a structured assessment."""
     from agents.sub_agents.market_validator.tools import assess_competition
@@ -153,6 +161,7 @@ async def analyze_competition(
             context["instructions_for_agent"], CompetitionResult, "dashboard_competition_agent", endpoint="competition"
         )
         result.competitor_count = context.get("competitor_count", len(req.competitors))
+        await save_analysis(db, current_user["id"], "competition", req.model_dump(), result.model_dump())
         return result
     except Exception as exc:
         _raise_500(exc, "Competition analysis")
@@ -164,6 +173,7 @@ async def analyze_competition(
 async def build_gtm_plan(
     req: GTMRequest,
     current_user: Annotated[dict, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db_session)],
 ):
     """Recommend a phased go-to-market strategy and return a structured plan."""
     from agents.sub_agents.market_validator.tools import suggest_gtm_strategy
@@ -176,6 +186,7 @@ async def build_gtm_plan(
         result.inferred_market_type = context.get("inferred_market_type", result.inferred_market_type)
         result.suggested_channels = context.get("suggested_channels", result.suggested_channels)
         result.suggested_pricing_models = context.get("suggested_pricing_models", result.suggested_pricing_models)
+        await save_analysis(db, current_user["id"], "gtm", req.model_dump(), result.model_dump())
         return result
     except Exception as exc:
         _raise_500(exc, "GTM plan generation")
@@ -187,6 +198,7 @@ async def build_gtm_plan(
 async def suggest_investors(
     req: InvestorRequest,
     current_user: Annotated[dict, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db_session)],
 ):
     """Suggest relevant investor types/tiers for a startup's stage and industry."""
     from agents.sub_agents.investor_outreacher.tools import suggest_investor_types
@@ -197,6 +209,7 @@ async def suggest_investors(
             context["instructions_for_agent"], InvestorResult, "dashboard_investors_agent", endpoint="investors"
         )
         result.typical_check_size = context.get("typical_check_size", result.typical_check_size)
+        await save_analysis(db, current_user["id"], "investors", req.model_dump(), result.model_dump())
         return result
     except Exception as exc:
         _raise_500(exc, "Investor targeting")
@@ -208,6 +221,7 @@ async def suggest_investors(
 async def estimate_valuation_range(
     req: ValuationRequest,
     current_user: Annotated[dict, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db_session)],
 ):
     """Estimate a pre-money valuation range with negotiation guidance."""
     from agents.sub_agents.valuation_advisor.tools import estimate_valuation
@@ -233,6 +247,7 @@ async def estimate_valuation_range(
         result.valuation_low_formatted = context["estimated_valuation_low_formatted"]
         result.valuation_high_formatted = context["estimated_valuation_high_formatted"]
         result.methodology = context["methodology"]
+        await save_analysis(db, current_user["id"], "valuation", req.model_dump(), result.model_dump())
         return result
     except Exception as exc:
         _raise_500(exc, "Valuation estimate")
@@ -244,6 +259,7 @@ async def estimate_valuation_range(
 async def draft_deck_sections(
     req: DeckRequest,
     current_user: Annotated[dict, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db_session)],
 ):
     """Draft/polish pitch deck section copy from whatever content is provided."""
     from agents.sub_agents.deck_creator.tools import SECTION_ORDER, SECTION_TITLES
@@ -263,6 +279,7 @@ async def draft_deck_sections(
     try:
         result = await _structured_completion(instructions, DeckResult, "dashboard_deck_agent", endpoint="deck")
         result.company_name = req.company_name
+        await save_analysis(db, current_user["id"], "deck", req.model_dump(), result.model_dump())
         return result
     except Exception as exc:
         _raise_500(exc, "Deck drafting")
@@ -299,3 +316,28 @@ async def export_deck(
             )
     except Exception as exc:
         _raise_500(exc, "Deck export")
+
+
+# ─── Saved analyses ──────────────────────────────────────────────────────────
+
+@router.get("/results", response_model=SavedAnalysesResponse)
+async def list_saved_analyses(
+    current_user: Annotated[dict, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+):
+    """Return the latest saved analysis per module for the current user, so the
+    dashboard can restore prior work and pre-fill forms on return."""
+    rows = await get_analyses(db, current_user["id"])
+    results = {
+        row.module: SavedAnalysis(
+            module=row.module,
+            inputs=row.inputs or {},
+            result=row.result or {},
+            updated_at=row.updated_at.isoformat() if row.updated_at else None,
+        )
+        for row in rows
+    }
+    return SavedAnalysesResponse(
+        results=results,
+        completed_modules=sorted(results.keys()),
+    )

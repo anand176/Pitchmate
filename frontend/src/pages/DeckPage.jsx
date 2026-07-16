@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { apiDashboardDeck, apiDashboardDeckExport, apiDownloadArtifact } from "../pitchmateApi";
-import { FileTextIcon } from "../icons";
+import { FileTextIcon, SparklesIcon } from "../icons";
+import { useAnalysisModule, relativeTime } from "../useAnalysisModule";
 
 const SECTION_FIELDS = [
     { key: "problem", label: "Problem" },
@@ -13,16 +14,72 @@ const SECTION_FIELDS = [
     { key: "competition", label: "Competition" },
 ];
 
+/**
+ * Turn the user's profile + already-run analyses into starting deck section
+ * content, so the founder refines rather than re-types. This is the cross-page
+ * flow — Market/GTM/Competition results feed the matching deck slides.
+ */
+function deriveSectionsFrom(profile, allResults) {
+    const out = {};
+    if (profile?.problem) out.problem = profile.problem;
+    if (profile?.solution) out.solution = profile.solution;
+    if (profile?.product_description) out.product = profile.product_description;
+
+    const market = allResults?.market;
+    if (market?.inputs) {
+        const { tam, sam, som } = market.inputs;
+        const parts = [tam && `TAM ${tam}`, sam && `SAM ${sam}`, som && `SOM ${som}`].filter(Boolean);
+        if (parts.length) out.market_size = `${parts.join(" · ")}.`;
+    }
+    const gtm = allResults?.gtm?.result;
+    if (gtm) {
+        const bits = [gtm.primary_icp, gtm.recommended_sales_motion,
+            gtm.suggested_channels?.length ? `Channels: ${gtm.suggested_channels.join(", ")}.` : ""]
+            .filter(Boolean);
+        if (bits.length) out.gtm_strategy = bits.join(" ");
+    }
+    const comp = allResults?.competition?.result;
+    if (comp?.suggested_moat) out.competition = `Moat: ${comp.suggested_moat}`;
+    return out;
+}
+
 export default function DeckPage() {
+    const { profile, saved, allResults, loadingSaved, reportRun } = useAnalysisModule("deck");
     const [companyName, setCompanyName] = useState("");
     const [sections, setSections] = useState({});
     const [result, setResult] = useState(null);
+    const [lastRun, setLastRun] = useState(null);
     const [loading, setLoading] = useState(false);
     const [exporting, setExporting] = useState(false);
     const [error, setError] = useState("");
+    const [hydrated, setHydrated] = useState(false);
+
+    useEffect(() => {
+        if (loadingSaved || hydrated) return;
+        setCompanyName(saved?.inputs?.company_name || profile?.company_name || "");
+        // Saved deck inputs win; otherwise seed from profile + analyses.
+        const savedSections = saved?.inputs
+            ? Object.fromEntries(SECTION_FIELDS.map(({ key }) => [key, saved.inputs[key]]).filter(([, v]) => v))
+            : {};
+        const seeded = Object.keys(savedSections).length ? savedSections : deriveSectionsFrom(profile, allResults);
+        setSections(seeded);
+        if (saved?.result) { setResult(saved.result); setLastRun(saved.updated_at); }
+        setHydrated(true);
+    }, [loadingSaved, saved, profile, allResults, hydrated]);
+
+    const hasPullable = Boolean(
+        profile?.problem || profile?.solution || profile?.product_description ||
+        allResults?.market || allResults?.gtm || allResults?.competition
+    );
 
     const updateSection = (key, value) => setSections((s) => ({ ...s, [key]: value }));
     const canSubmit = companyName.trim();
+
+    const pullFromData = () => {
+        const derived = deriveSectionsFrom(profile, allResults);
+        setSections((s) => ({ ...derived, ...s })); // don't clobber anything already typed
+        if (!companyName.trim() && profile?.company_name) setCompanyName(profile.company_name);
+    };
 
     const buildPayload = () => ({
         company_name: companyName.trim() || "Product Deck",
@@ -34,8 +91,11 @@ export default function DeckPage() {
         if (!canSubmit || loading) return;
         setLoading(true); setError(""); setResult(null);
         try {
-            const data = await apiDashboardDeck(buildPayload());
+            const payload = buildPayload();
+            const data = await apiDashboardDeck(payload);
             setResult(data);
+            setLastRun(new Date().toISOString());
+            reportRun(data, payload);
         } catch (err) {
             setError(err.message || "Deck drafting failed.");
         } finally {
@@ -69,6 +129,12 @@ export default function DeckPage() {
             <div className="dash-grid">
                 <form className="dash-card" onSubmit={handleDraft}>
                     <h3>Deck content</h3>
+                    {hasPullable && (
+                        <button type="button" className="dash-btn-ghost" style={{ width: "100%", justifyContent: "center", marginBottom: 14 }} onClick={pullFromData}>
+                            <SparklesIcon size={14} />
+                            Pull from my profile &amp; analyses
+                        </button>
+                    )}
                     <div className="dash-field">
                         <label>Company name</label>
                         <input className="dash-input" placeholder="Pitchmate" value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
@@ -103,6 +169,7 @@ export default function DeckPage() {
                     )}
                     {result && (
                         <div className="dash-card">
+                            {lastRun && <div className="dash-lastrun">Last run · {relativeTime(lastRun)}</div>}
                             <h3 style={{ marginBottom: 4 }}>{result.company_name}</h3>
                             {result.sections?.map((s) => (
                                 <div key={s.key} style={{ marginBottom: 14 }}>

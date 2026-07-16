@@ -1,12 +1,26 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { apiDashboardMarket } from "../pitchmateApi";
 import { TrendingUpIcon } from "../icons";
+import { useAnalysisModule, relativeTime } from "../useAnalysisModule";
 
 export default function MarketPage() {
+    const { profile, saved, loadingSaved, reportRun } = useAnalysisModule("market");
     const [form, setForm] = useState({ tam: "", sam: "", som: "", description: "" });
     const [result, setResult] = useState(null);
+    const [lastRun, setLastRun] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [hydrated, setHydrated] = useState(false);
+    const [prefilled, setPrefilled] = useState(false);
+
+    useEffect(() => {
+        if (loadingSaved || hydrated) return;
+        const desc = profile?.one_liner || profile?.product_description || "";
+        setForm((f) => ({ ...f, description: desc, ...(saved?.inputs || {}) }));
+        if (saved?.result) { setResult(saved.result); setLastRun(saved.updated_at); }
+        else if (desc) setPrefilled(true);
+        setHydrated(true);
+    }, [loadingSaved, saved, profile, hydrated]);
 
     const update = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -19,6 +33,8 @@ export default function MarketPage() {
         try {
             const data = await apiDashboardMarket(form);
             setResult(data);
+            setLastRun(new Date().toISOString());
+            reportRun(data, form);
         } catch (err) {
             setError(err.message || "Market analysis failed.");
         } finally {
@@ -36,6 +52,7 @@ export default function MarketPage() {
             <div className="dash-grid">
                 <form className="dash-card" onSubmit={handleSubmit}>
                     <h3>Your market claims</h3>
+                    {prefilled && <div className="dash-prefill-note">Description pre-filled from your profile — edit as needed.</div>}
                     <div className="dash-row">
                         <div className="dash-field">
                             <label>TAM (Total Addressable Market)</label>
@@ -70,6 +87,7 @@ export default function MarketPage() {
                     )}
                     {result && (
                         <div className="dash-card">
+                            {lastRun && <div className="dash-lastrun">Last run · {relativeTime(lastRun)}</div>}
                             <span className={`dash-verdict ${result.verdict}`}>{(result.verdict || "").replace("_", " ")}</span>
 
                             {result.automatic_flags?.length > 0 && (

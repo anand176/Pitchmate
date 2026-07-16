@@ -2,8 +2,9 @@
 
 import uuid
 from datetime import datetime, timezone
+from typing import Any
 
-from sqlalchemy import Boolean, DateTime, Integer, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, Integer, JSON, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from db.base import Base
@@ -54,6 +55,38 @@ class StartupProfile(Base):
 
     wizard_completed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     onboarding_dismissed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+
+class AnalysisResult(Base):
+    """
+    Latest saved output of a dashboard module (market, competition, gtm,
+    investors, valuation, deck) for a user. One row per (user, module) — a
+    re-run upserts in place, so the dashboard always restores the most recent
+    analysis and readiness can tell which modules are done. `inputs` stores the
+    form the user submitted (for form pre-fill on return); `result` stores the
+    structured LLM output (for instant re-render without another API call).
+    """
+
+    __tablename__ = "analysis_results"
+    __table_args__ = (
+        UniqueConstraint("user_id", "module", name="uq_analysis_results_user_module"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    module: Mapped[str] = mapped_column(String(32), nullable=False)
+
+    inputs: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
+    result: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)

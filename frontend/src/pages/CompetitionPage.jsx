@@ -1,13 +1,25 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { apiDashboardCompetition } from "../pitchmateApi";
 import { UsersIcon } from "../icons";
+import { useAnalysisModule, relativeTime } from "../useAnalysisModule";
 
 export default function CompetitionPage() {
+    const { profile, saved, loadingSaved, reportRun } = useAnalysisModule("competition");
     const [competitorsText, setCompetitorsText] = useState("");
     const [description, setDescription] = useState("");
     const [result, setResult] = useState(null);
+    const [lastRun, setLastRun] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [hydrated, setHydrated] = useState(false);
+
+    useEffect(() => {
+        if (loadingSaved || hydrated) return;
+        if (saved?.inputs?.competitors) setCompetitorsText(saved.inputs.competitors.join(", "));
+        setDescription(saved?.inputs?.description || profile?.one_liner || profile?.solution || "");
+        if (saved?.result) { setResult(saved.result); setLastRun(saved.updated_at); }
+        setHydrated(true);
+    }, [loadingSaved, saved, profile, hydrated]);
 
     const competitors = competitorsText.split(",").map((c) => c.trim()).filter(Boolean);
     const canSubmit = competitors.length > 0;
@@ -17,8 +29,11 @@ export default function CompetitionPage() {
         if (!canSubmit || loading) return;
         setLoading(true); setError(""); setResult(null);
         try {
-            const data = await apiDashboardCompetition({ competitors, description: description.trim() || undefined });
+            const inputs = { competitors, description: description.trim() || undefined };
+            const data = await apiDashboardCompetition(inputs);
             setResult(data);
+            setLastRun(new Date().toISOString());
+            reportRun(data, inputs);
         } catch (err) {
             setError(err.message || "Competition analysis failed.");
         } finally {
@@ -61,8 +76,9 @@ export default function CompetitionPage() {
                     )}
                     {result && (
                         <div className="dash-card">
+                            {lastRun && <div className="dash-lastrun">Last run · {relativeTime(lastRun)}</div>}
                             <div className="dash-section-title">Suggested Moat</div>
-                            <p style={{ fontSize: 13, color: "#e0e0e0", lineHeight: 1.6, fontWeight: 600 }}>{result.suggested_moat}</p>
+                            <p style={{ fontSize: 13, color: "#0F172A", lineHeight: 1.6, fontWeight: 600 }}>{result.suggested_moat}</p>
 
                             {result.competitor_table?.length > 0 && (
                                 <>

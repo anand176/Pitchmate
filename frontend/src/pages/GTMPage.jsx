@@ -1,12 +1,26 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { apiDashboardGTM } from "../pitchmateApi";
 import { TargetIcon } from "../icons";
+import { useAnalysisModule, relativeTime } from "../useAnalysisModule";
 
 export default function GTMPage() {
+    const { profile, saved, loadingSaved, reportRun } = useAnalysisModule("gtm");
     const [form, setForm] = useState({ product_description: "", target_market: "" });
     const [result, setResult] = useState(null);
+    const [lastRun, setLastRun] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [hydrated, setHydrated] = useState(false);
+    const [prefilled, setPrefilled] = useState(false);
+
+    useEffect(() => {
+        if (loadingSaved || hydrated) return;
+        const desc = profile?.product_description || profile?.one_liner || "";
+        setForm((f) => ({ ...f, product_description: desc, ...(saved?.inputs || {}) }));
+        if (saved?.result) { setResult(saved.result); setLastRun(saved.updated_at); }
+        else if (desc) setPrefilled(true);
+        setHydrated(true);
+    }, [loadingSaved, saved, profile, hydrated]);
 
     const update = (k, v) => setForm((f) => ({ ...f, [k]: v }));
     const canSubmit = form.product_description.trim() && form.target_market.trim();
@@ -18,6 +32,8 @@ export default function GTMPage() {
         try {
             const data = await apiDashboardGTM(form);
             setResult(data);
+            setLastRun(new Date().toISOString());
+            reportRun(data, form);
         } catch (err) {
             setError(err.message || "GTM plan generation failed.");
         } finally {
@@ -35,6 +51,7 @@ export default function GTMPage() {
             <div className="dash-grid">
                 <form className="dash-card" onSubmit={handleSubmit}>
                     <h3>Your product</h3>
+                    {prefilled && <div className="dash-prefill-note">Product pre-filled from your profile — edit as needed.</div>}
                     <div className="dash-field">
                         <label>Product description</label>
                         <textarea className="dash-textarea" placeholder="e.g. AI-powered CRM for small businesses"
@@ -60,6 +77,7 @@ export default function GTMPage() {
                     )}
                     {result && (
                         <div className="dash-card">
+                            {lastRun && <div className="dash-lastrun">Last run · {relativeTime(lastRun)}</div>}
                             <div className="dash-tag">{result.inferred_market_type}</div>
 
                             <div className="dash-section-title">Suggested Channels</div>

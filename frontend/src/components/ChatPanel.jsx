@@ -1,13 +1,13 @@
 import { useState, useRef, useEffect } from "react";
-import { apiPitchmate, apiDownloadArtifact } from "../pitchmateApi";
+import { apiPitchmate, apiDownloadArtifact, apiListDocuments } from "../pitchmateApi";
 import { formatMessage } from "../theme";
-import { SendIcon, CloseIcon, SparklesIcon, CheckCircleIcon, LogoMark } from "../icons";
+import { SendIcon, CloseIcon, SparklesIcon, CheckCircleIcon, LogoMark, FileTextIcon } from "../icons";
 
 const STARTER_PROMPTS = [
-    "Help me validate my product idea",
-    "Write me a 60-second elevator pitch",
-    "What questions will investors ask me?",
-    "Draft an investor outreach email",
+    "Tighten my problem & solution into a 60-second pitch",
+    "What will investors push back on in my deck?",
+    "Draft an investor outreach email for my stage",
+    "Poke holes in my market sizing",
 ];
 
 const AGENT_STEPS = [
@@ -27,6 +27,7 @@ export default function ChatPanel({ open, onClose, messages, setMessages, sessio
     const [input, setInput] = useState("");
     const [loading, setLoading] = useState(false);
     const [activeStepIdx, setActiveStepIdx] = useState(-1);
+    const [docCount, setDocCount] = useState(null);
     const chatRef = useRef(null);
     const textareaRef = useRef(null);
 
@@ -36,6 +37,13 @@ export default function ChatPanel({ open, onClose, messages, setMessages, sessio
 
     useEffect(() => {
         if (open && textareaRef.current) textareaRef.current.focus();
+        // Refresh the knowledge-base doc count each time the panel opens so the
+        // "grounded in N documents" line reflects any newly-uploaded files.
+        if (open) {
+            apiListDocuments()
+                .then((d) => setDocCount((d?.documents || []).length))
+                .catch(() => setDocCount(null));
+        }
     }, [open]);
 
     useEffect(() => {
@@ -119,12 +127,18 @@ export default function ChatPanel({ open, onClose, messages, setMessages, sessio
                             <div className="chat-welcome-icon">
                                 <SparklesIcon size={20} />
                             </div>
-                            <h4>Ask me anything</h4>
+                            <h4>Refine with your co-pilot</h4>
                             <p>
                                 {profileComplete
-                                    ? "Profile loaded. Ask me to validate market or draft your deck."
-                                    : "I can validate your market, draft outreach emails, review your deck, and more."}
+                                    ? "I know your startup. Use the tabs for structured deliverables — ask me here to refine them, stress-test your story, or draft outreach."
+                                    : "Ask me to sharpen your pitch, stress-test your market, or draft outreach. Finish your profile so I can tailor answers to your startup."}
                             </p>
+                            {docCount > 0 && (
+                                <div className="dash-kb-note" style={{ marginBottom: 16 }}>
+                                    <FileTextIcon size={15} />
+                                    <span>Grounded in your <b>{docCount}</b> uploaded document{docCount === 1 ? "" : "s"}.</span>
+                                </div>
+                            )}
                             <div className="chat-starters">
                                 {STARTER_PROMPTS.map((p, i) => (
                                     <button key={i} className="chat-starter-btn" onClick={() => sendMessage(p)}>{p}</button>

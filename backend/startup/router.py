@@ -80,15 +80,23 @@ def profile_to_markdown(profile: StartupProfile | None) -> str:
     return "\n".join(lines)
 
 
-def compute_readiness(profile: StartupProfile | None) -> ReadinessResponse:
+def compute_readiness(
+    profile: StartupProfile | None,
+    completed_modules: set[str] | None = None,
+) -> ReadinessResponse:
     """
-    Lifecycle / setup progress (not module completion yet).
+    Lifecycle / setup progress plus dashboard-module completion.
 
     Weights (sum 100):
       core profile 30 · product narrative 15 · raising/funding detail 10
-      deck upload 10 · architecture upload 5 · remaining reserved for modules 30
+      deck upload 10 · architecture upload 5 · market 10 · investors 10 · deck drafted 10
+
+    `completed_modules` is the set of dashboard modules the user has a saved
+    analysis for (from analysis_results); market/investors/deck milestones flip
+    to done once their module has been run at least once.
     """
     p = profile
+    done_modules = completed_modules or set()
     core_done = profile_is_complete(p)
     product_done = bool(
         p
@@ -112,6 +120,9 @@ def compute_readiness(profile: StartupProfile | None) -> ReadinessResponse:
     )
     deck_done = bool(p and p.has_deck_upload)
     arch_done = bool(p and (p.has_architecture_upload or _is_filled(p.architecture_image_name)))
+    market_done = "market" in done_modules
+    investors_done = "investors" in done_modules
+    deck_drafted = "deck" in done_modules
 
     milestones = [
         ReadinessMilestone(id="profile", label="Startup profile", done=core_done, weight=30),
@@ -119,9 +130,9 @@ def compute_readiness(profile: StartupProfile | None) -> ReadinessResponse:
         ReadinessMilestone(id="funding", label="Funding progress", done=funding_done, weight=10),
         ReadinessMilestone(id="deck_doc", label="Deck uploaded", done=deck_done, weight=10),
         ReadinessMilestone(id="architecture", label="Architecture asset", done=arch_done, weight=5),
-        ReadinessMilestone(id="market", label="Market validated", done=False, weight=10),
-        ReadinessMilestone(id="investors", label="Investor targeting", done=False, weight=10),
-        ReadinessMilestone(id="deck_export", label="Deck drafted", done=False, weight=10),
+        ReadinessMilestone(id="market", label="Market validated", done=market_done, weight=10),
+        ReadinessMilestone(id="investors", label="Investor targeting", done=investors_done, weight=10),
+        ReadinessMilestone(id="deck_export", label="Deck drafted", done=deck_drafted, weight=10),
     ]
     for m in milestones:
         m.percent = m.weight if m.done else 0
@@ -137,9 +148,18 @@ def compute_readiness(profile: StartupProfile | None) -> ReadinessResponse:
     elif not funding_done and (p and (p.lifecycle_stage or "") in ("raising", "angel_backed", "seed_closed")):
         next_action = "Update your funding progress (raise target, investors)"
         next_path = "/settings"
-    else:
+    elif not market_done:
         next_action = "Validate your market sizing (TAM / SAM / SOM)"
         next_path = "/market"
+    elif not investors_done:
+        next_action = "Map your investor targeting strategy"
+        next_path = "/investors"
+    elif not deck_drafted:
+        next_action = "Draft your pitch deck sections"
+        next_path = "/deck"
+    else:
+        next_action = "Refine your deck and rehearse with the AI co-pilot"
+        next_path = "/deck"
 
     return ReadinessResponse(
         overall_percent=overall,
@@ -244,5 +264,8 @@ async def get_readiness(
     current_user: Annotated[dict, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ):
+    from dashboard.store import get_completed_modules
+
     profile = await _get_or_none(db, current_user["id"])
-    return compute_readiness(profile)
+    completed = await get_completed_modules(db, current_user["id"])
+    return compute_readiness(profile, completed)

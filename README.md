@@ -15,7 +15,7 @@
 | **Draw.io Agent** | Diagrams, flowcharts, org charts, Mermaid, business model canvas, GTM funnel |
 | **Pitch Writer** | Elevator pitch (30–60 sec) + one-page executive summary (PDF) |
 | **Due Diligence** | Anticipates investor questions, red flags, Q&A prep → **downloadable Q&A PDF** |
-| **Deck Creator** | Pitch deck / product report as **PDF or DOCX** (Problem, Solution, Market, Product, Traction, GTM, Competition) |
+| **Deck Creator** |  hPitch deck / product report as **PDF or DOCX** (Problem, Solution, Market, Product, Traction, GTM, Competition) |
 | **Figma Design (MCP)** | Visual design review of Figma deck files — layout, hierarchy, typography, slide-level feedback |
 
 ---

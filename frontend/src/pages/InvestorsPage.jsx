@@ -1,15 +1,37 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { apiDashboardInvestors } from "../pitchmateApi";
 import { HandshakeIcon } from "../icons";
+import { useAnalysisModule, relativeTime } from "../useAnalysisModule";
 
 const STAGES = ["Pre-Seed", "Seed", "Series A", "Series B+"];
 
+const STAGE_FROM_LIFECYCLE = {
+    idea: "Pre-Seed", validating: "Pre-Seed", building: "Pre-Seed", pre_revenue: "Pre-Seed",
+    revenue: "Seed", raising: "Seed", angel_backed: "Seed", seed_closed: "Series A",
+    series_a_plus: "Series B+",
+};
+
 export default function InvestorsPage() {
+    const { profile, saved, loadingSaved, reportRun } = useAnalysisModule("investors");
     const [stage, setStage] = useState("Seed");
     const [industry, setIndustry] = useState("");
     const [result, setResult] = useState(null);
+    const [lastRun, setLastRun] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [hydrated, setHydrated] = useState(false);
+    const [prefilled, setPrefilled] = useState(false);
+
+    useEffect(() => {
+        if (loadingSaved || hydrated) return;
+        const defStage = STAGE_FROM_LIFECYCLE[profile?.lifecycle_stage] || "Seed";
+        setStage(saved?.inputs?.stage || defStage);
+        const ind = saved?.inputs?.industry || profile?.industry || "";
+        setIndustry(ind);
+        if (saved?.result) { setResult(saved.result); setLastRun(saved.updated_at); }
+        else if (profile?.industry) setPrefilled(true);
+        setHydrated(true);
+    }, [loadingSaved, saved, profile, hydrated]);
 
     const canSubmit = industry.trim();
 
@@ -18,8 +40,11 @@ export default function InvestorsPage() {
         if (!canSubmit || loading) return;
         setLoading(true); setError(""); setResult(null);
         try {
-            const data = await apiDashboardInvestors({ stage, industry });
+            const inputs = { stage, industry };
+            const data = await apiDashboardInvestors(inputs);
             setResult(data);
+            setLastRun(new Date().toISOString());
+            reportRun(data, inputs);
         } catch (err) {
             setError(err.message || "Investor targeting failed.");
         } finally {
@@ -37,6 +62,7 @@ export default function InvestorsPage() {
             <div className="dash-grid">
                 <form className="dash-card" onSubmit={handleSubmit}>
                     <h3>Your fundraise</h3>
+                    {prefilled && <div className="dash-prefill-note">Stage &amp; industry pre-filled from your profile.</div>}
                     <div className="dash-field">
                         <label>Funding stage</label>
                         <select className="dash-select" value={stage} onChange={(e) => setStage(e.target.value)}>
@@ -63,6 +89,7 @@ export default function InvestorsPage() {
                     )}
                     {result && (
                         <div className="dash-card">
+                            {lastRun && <div className="dash-lastrun">Last run · {relativeTime(lastRun)}</div>}
                             <div className="dash-tag">Check size: {result.typical_check_size}</div>
                             <p style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6, marginTop: 10 }}>{result.what_investors_look_for}</p>
 
