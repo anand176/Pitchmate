@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { apiDashboardInvestors } from "../pitchmateApi";
 import { HandshakeIcon } from "../icons";
 import { useAnalysisModule, relativeTime } from "../useAnalysisModule";
+import { ResultCard, Section, MotionButton } from "../motion";
 
 const STAGES = ["Pre-Seed", "Seed", "Series A", "Series B+"];
 
@@ -16,6 +17,7 @@ export default function InvestorsPage() {
     const [stage, setStage] = useState("Seed");
     const [industry, setIndustry] = useState("");
     const [result, setResult] = useState(null);
+    const [resultVersion, setResultVersion] = useState(0);
     const [lastRun, setLastRun] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -43,6 +45,7 @@ export default function InvestorsPage() {
             const inputs = { stage, industry };
             const data = await apiDashboardInvestors(inputs);
             setResult(data);
+            setResultVersion((v) => v + 1);
             setLastRun(new Date().toISOString());
             reportRun(data, inputs);
         } catch (err) {
@@ -74,9 +77,9 @@ export default function InvestorsPage() {
                         <input className="dash-input" placeholder="e.g. fintech, AI/ML, healthtech"
                             value={industry} onChange={(e) => setIndustry(e.target.value)} />
                     </div>
-                    <button className="dash-btn-primary" type="submit" disabled={!canSubmit || loading}>
+                    <MotionButton type="submit" disabled={!canSubmit || loading}>
                         {loading ? "Finding investors..." : "Suggest Investors"}
-                    </button>
+                    </MotionButton>
                     {error && <div className="dash-error">{error}</div>}
                 </form>
 
@@ -88,16 +91,16 @@ export default function InvestorsPage() {
                         <div className="dash-card"><div className="dash-empty"><span className="dash-empty-icon"><HandshakeIcon size={20} /></span>Select your stage and industry to get a tiered investor targeting strategy.</div></div>
                     )}
                     {result && (
-                        <div className="dash-card">
+                        <ResultCard key={resultVersion} animate={resultVersion > 0}>
                             {lastRun && <div className="dash-lastrun">Last run · {relativeTime(lastRun)}</div>}
-                            <div className="dash-tag">Check size: {result.typical_check_size}</div>
-                            <p style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6, marginTop: 10 }}>{result.what_investors_look_for}</p>
+                            <Section as="span" className="dash-tag">Check size: {result.typical_check_size}</Section>
+                            <Section as="p" style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6, marginTop: 10 }}>{result.what_investors_look_for}</Section>
 
                             {result.tiers?.length > 0 && (
                                 <>
-                                    <div className="dash-section-title">Investor Tiers</div>
+                                    <Section className="dash-section-title">Investor Tiers</Section>
                                     {result.tiers.map((tier, i) => (
-                                        <div key={i} style={{ marginBottom: 12 }}>
+                                        <Section key={i} style={{ marginBottom: 12 }}>
                                             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                                                 <span className="dash-tag" style={{ fontWeight: 700 }}>Tier {tier.tier}</span>
                                             </div>
@@ -105,31 +108,31 @@ export default function InvestorsPage() {
                                                 {tier.investor_types?.map((t, j) => <span key={j} className="dash-tag">{t}</span>)}
                                             </div>
                                             {tier.rationale && <p style={{ fontSize: 12, color: "#64748B", lineHeight: 1.5 }}>{tier.rationale}</p>}
-                                        </div>
+                                        </Section>
                                     ))}
                                 </>
                             )}
 
                             {result.example_profiles?.length > 0 && (
                                 <>
-                                    <div className="dash-section-title">Example Investor Profiles</div>
-                                    <div className="dash-list">{result.example_profiles.map((p, i) => <div key={i} className="dash-list-item"><span className="bullet">•</span>{p}</div>)}</div>
+                                    <Section className="dash-section-title">Example Investor Profiles</Section>
+                                    <Section className="dash-list">{result.example_profiles.map((p, i) => <div key={i} className="dash-list-item"><span className="bullet">•</span>{p}</div>)}</Section>
                                 </>
                             )}
 
                             {result.outreach_strategy && (
                                 <>
-                                    <div className="dash-section-title">Outreach Strategy</div>
-                                    <p style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6 }}>{result.outreach_strategy}</p>
+                                    <Section className="dash-section-title">Outreach Strategy</Section>
+                                    <Section as="p" style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6 }}>{result.outreach_strategy}</Section>
                                 </>
                             )}
                             {result.red_flags?.length > 0 && (
                                 <>
-                                    <div className="dash-section-title">Investors to Avoid</div>
-                                    <div className="dash-list">{result.red_flags.map((s, i) => <div key={i} className="dash-list-item"><span className="bullet">•</span>{s}</div>)}</div>
+                                    <Section className="dash-section-title">Investors to Avoid</Section>
+                                    <Section className="dash-list">{result.red_flags.map((s, i) => <div key={i} className="dash-list-item"><span className="bullet">•</span>{s}</div>)}</Section>
                                 </>
                             )}
-                        </div>
+                        </ResultCard>
                     )}
                 </div>
             </div>

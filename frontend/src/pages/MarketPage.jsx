@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import { apiDashboardMarket } from "../pitchmateApi";
 import { TrendingUpIcon } from "../icons";
 import { useAnalysisModule, relativeTime } from "../useAnalysisModule";
+import { ResultCard, Section, MotionButton } from "../motion";
 
 export default function MarketPage() {
     const { profile, saved, loadingSaved, reportRun } = useAnalysisModule("market");
     const [form, setForm] = useState({ tam: "", sam: "", som: "", description: "" });
     const [result, setResult] = useState(null);
+    const [resultVersion, setResultVersion] = useState(0);
     const [lastRun, setLastRun] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -33,6 +35,7 @@ export default function MarketPage() {
         try {
             const data = await apiDashboardMarket(form);
             setResult(data);
+            setResultVersion((v) => v + 1);
             setLastRun(new Date().toISOString());
             reportRun(data, form);
         } catch (err) {
@@ -72,9 +75,9 @@ export default function MarketPage() {
                         <textarea className="dash-textarea" placeholder="Briefly describe your business and product..."
                             value={form.description} onChange={(e) => update("description", e.target.value)} rows={4} />
                     </div>
-                    <button className="dash-btn-primary" type="submit" disabled={!canSubmit || loading}>
+                    <MotionButton type="submit" disabled={!canSubmit || loading}>
                         {loading ? "Analyzing..." : "Validate Market Size"}
-                    </button>
+                    </MotionButton>
                     {error && <div className="dash-error">{error}</div>}
                 </form>
 
@@ -86,43 +89,43 @@ export default function MarketPage() {
                         <div className="dash-card"><div className="dash-empty"><span className="dash-empty-icon"><TrendingUpIcon size={20} /></span>Fill in your TAM/SAM/SOM and description, then submit to see a structured credibility assessment.</div></div>
                     )}
                     {result && (
-                        <div className="dash-card">
+                        <ResultCard key={resultVersion} animate={resultVersion > 0}>
                             {lastRun && <div className="dash-lastrun">Last run · {relativeTime(lastRun)}</div>}
-                            <span className={`dash-verdict ${result.verdict}`}>{(result.verdict || "").replace("_", " ")}</span>
+                            <Section as="span" className={`dash-verdict ${result.verdict}`}>{(result.verdict || "").replace("_", " ")}</Section>
 
                             {result.automatic_flags?.length > 0 && (
                                 <>
-                                    <div className="dash-section-title">Automatic flags</div>
-                                    <div>{result.automatic_flags.map((f, i) => <span key={i} className="dash-tag warn">{f}</span>)}</div>
+                                    <Section className="dash-section-title">Automatic flags</Section>
+                                    <Section>{result.automatic_flags.map((f, i) => <span key={i} className="dash-tag warn">{f}</span>)}</Section>
                                 </>
                             )}
 
-                            <div className="dash-section-title">TAM Assessment</div>
-                            <p style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6 }}>{result.tam_assessment}</p>
-                            <div className="dash-section-title">SAM Assessment</div>
-                            <p style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6 }}>{result.sam_assessment}</p>
-                            <div className="dash-section-title">SOM Assessment</div>
-                            <p style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6 }}>{result.som_assessment}</p>
+                            <Section className="dash-section-title">TAM Assessment</Section>
+                            <Section as="p" style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6 }}>{result.tam_assessment}</Section>
+                            <Section className="dash-section-title">SAM Assessment</Section>
+                            <Section as="p" style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6 }}>{result.sam_assessment}</Section>
+                            <Section className="dash-section-title">SOM Assessment</Section>
+                            <Section as="p" style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6 }}>{result.som_assessment}</Section>
 
                             {result.strengths?.length > 0 && (
                                 <>
-                                    <div className="dash-section-title">Strengths</div>
-                                    <div className="dash-list">{result.strengths.map((s, i) => <div key={i} className="dash-list-item"><span className="bullet">•</span>{s}</div>)}</div>
+                                    <Section className="dash-section-title">Strengths</Section>
+                                    <Section className="dash-list">{result.strengths.map((s, i) => <div key={i} className="dash-list-item"><span className="bullet">•</span>{s}</div>)}</Section>
                                 </>
                             )}
                             {result.red_flags?.length > 0 && (
                                 <>
-                                    <div className="dash-section-title">Red Flags</div>
-                                    <div className="dash-list">{result.red_flags.map((s, i) => <div key={i} className="dash-list-item"><span className="bullet">•</span>{s}</div>)}</div>
+                                    <Section className="dash-section-title">Red Flags</Section>
+                                    <Section className="dash-list">{result.red_flags.map((s, i) => <div key={i} className="dash-list-item"><span className="bullet">•</span>{s}</div>)}</Section>
                                 </>
                             )}
                             {result.recommendations?.length > 0 && (
                                 <>
-                                    <div className="dash-section-title">Recommendations</div>
-                                    <div className="dash-list">{result.recommendations.map((s, i) => <div key={i} className="dash-list-item"><span className="bullet">•</span>{s}</div>)}</div>
+                                    <Section className="dash-section-title">Recommendations</Section>
+                                    <Section className="dash-list">{result.recommendations.map((s, i) => <div key={i} className="dash-list-item"><span className="bullet">•</span>{s}</div>)}</Section>
                                 </>
                             )}
-                        </div>
+                        </ResultCard>
                     )}
                 </div>
             </div>

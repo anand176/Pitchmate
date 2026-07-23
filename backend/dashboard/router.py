@@ -38,14 +38,20 @@ from dashboard.schemas import (
     DeckExportResult,
     DeckRequest,
     DeckResult,
+    FinanceRequest,
+    FinanceResult,
     GTMRequest,
     GTMResult,
     InvestorRequest,
     InvestorResult,
     MarketSizeRequest,
     MarketSizeResult,
+    MeetingDebriefRequest,
+    MeetingDebriefResult,
     SavedAnalysis,
     SavedAnalysesResponse,
+    TractionRequest,
+    TractionResult,
     ValuationRequest,
     ValuationResult,
 )
@@ -316,6 +322,86 @@ async def export_deck(
             )
     except Exception as exc:
         _raise_500(exc, "Deck export")
+
+
+# ─── Financial Narrative ─────────────────────────────────────────────────────
+
+@router.post("/finance", response_model=FinanceResult)
+async def coach_financials(
+    req: FinanceRequest,
+    current_user: Annotated[dict, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+):
+    """Turn raw unit economics into an investor-facing financial narrative."""
+    from agents.sub_agents.financial_narrative.tools import analyze_financials
+
+    try:
+        context = json.loads(
+            analyze_financials(
+                req.revenue or "", req.cac or "", req.ltv or "", req.monthly_burn or "",
+                req.cash_in_bank or "", req.gross_margin or "", req.context or "",
+            )
+        )
+        result = await _structured_completion(
+            context["instructions_for_agent"], FinanceResult, "dashboard_finance_agent", endpoint="finance"
+        )
+        # Deterministic numbers come from the computed context, never the LLM.
+        for key in ("ltv_cac_ratio", "ltv_cac_formatted", "runway_months", "cac_formatted",
+                    "ltv_formatted", "monthly_burn_formatted", "cash_formatted", "gross_margin_pct"):
+            setattr(result, key, context.get(key))
+        result.automatic_flags = context.get("automatic_flags", [])
+        await save_analysis(db, current_user["id"], "finance", req.model_dump(), result.model_dump())
+        return result
+    except Exception as exc:
+        _raise_500(exc, "Financial narrative")
+
+
+# ─── Traction Framing ────────────────────────────────────────────────────────
+
+@router.post("/traction", response_model=TractionResult)
+async def frame_traction_story(
+    req: TractionRequest,
+    current_user: Annotated[dict, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+):
+    """Frame raw early traction into a credible momentum / social-proof narrative."""
+    from agents.sub_agents.traction_framing.tools import frame_traction
+
+    try:
+        context = json.loads(
+            frame_traction(req.metrics, req.customer_quotes or "", req.milestones or "", req.stage or "")
+        )
+        result = await _structured_completion(
+            context["instructions_for_agent"], TractionResult, "dashboard_traction_agent", endpoint="traction"
+        )
+        await save_analysis(db, current_user["id"], "traction", req.model_dump(), result.model_dump())
+        return result
+    except Exception as exc:
+        _raise_500(exc, "Traction framing")
+
+
+# ─── Meeting Debrief ─────────────────────────────────────────────────────────
+
+@router.post("/debrief", response_model=MeetingDebriefResult)
+async def debrief_meeting(
+    req: MeetingDebriefRequest,
+    current_user: Annotated[dict, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+):
+    """Read an investor meeting's signal (warm/lukewarm/dead) and recommend next steps."""
+    from agents.sub_agents.meeting_debrief.tools import analyze_meeting_debrief
+
+    try:
+        context = json.loads(
+            analyze_meeting_debrief(req.investor_name, req.investor_type, req.meeting_notes, req.ask or "")
+        )
+        result = await _structured_completion(
+            context["instructions_for_agent"], MeetingDebriefResult, "dashboard_debrief_agent", endpoint="debrief"
+        )
+        await save_analysis(db, current_user["id"], "debrief", req.model_dump(), result.model_dump())
+        return result
+    except Exception as exc:
+        _raise_500(exc, "Meeting debrief")
 
 
 # ─── Saved analyses ──────────────────────────────────────────────────────────

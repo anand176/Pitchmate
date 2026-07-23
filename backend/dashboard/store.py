@@ -18,7 +18,10 @@ from db.models import AnalysisResult
 
 # Dashboard modules that persist a result. Kept here so readiness and the
 # results endpoint agree on the canonical set.
-ANALYSIS_MODULES = ("market", "competition", "gtm", "investors", "valuation", "deck")
+ANALYSIS_MODULES = (
+    "market", "competition", "gtm", "investors", "valuation", "deck",
+    "debrief", "finance", "traction",
+)
 
 
 async def save_analysis(

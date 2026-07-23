@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { apiDashboardValuation } from "../pitchmateApi";
 import { CoinsIcon } from "../icons";
 import { useAnalysisModule, relativeTime } from "../useAnalysisModule";
+import { ResultCard, Section, MotionButton } from "../motion";
 
 const STAGES = ["Pre-Seed", "Seed", "Series A", "Series B+"];
 
@@ -19,6 +20,7 @@ export default function ValuationPage() {
         team_strength: 3, traction_strength: 3,
     });
     const [result, setResult] = useState(null);
+    const [resultVersion, setResultVersion] = useState(0);
     const [lastRun, setLastRun] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -46,6 +48,7 @@ export default function ValuationPage() {
         try {
             const data = await apiDashboardValuation(form);
             setResult(data);
+            setResultVersion((v) => v + 1);
             setLastRun(new Date().toISOString());
             reportRun(data, form);
         } catch (err) {
@@ -101,9 +104,9 @@ export default function ValuationPage() {
                             <span className="dash-slider-value">{form.traction_strength}</span>
                         </div>
                     </div>
-                    <button className="dash-btn-primary" type="submit" disabled={!canSubmit || loading}>
+                    <MotionButton type="submit" disabled={!canSubmit || loading}>
                         {loading ? "Estimating..." : "Estimate Valuation"}
-                    </button>
+                    </MotionButton>
                     {error && <div className="dash-error">{error}</div>}
                 </form>
 
@@ -115,35 +118,35 @@ export default function ValuationPage() {
                         <div className="dash-card"><div className="dash-empty"><span className="dash-empty-icon"><CoinsIcon size={20} /></span>Fill in your stage, sector, and traction to get a valuation range.</div></div>
                     )}
                     {result && (
-                        <div className="dash-card">
+                        <ResultCard key={resultVersion} animate={resultVersion > 0}>
                             {lastRun && <div className="dash-lastrun">Last run · {relativeTime(lastRun)}</div>}
-                            <div className="dash-valuation-range">{result.valuation_low_formatted} - {result.valuation_high_formatted}</div>
-                            <div className="dash-valuation-sub">Pre-money | methodology: {result.methodology?.replaceAll("_", " ")}</div>
+                            <Section className="dash-valuation-range">{result.valuation_low_formatted} - {result.valuation_high_formatted}</Section>
+                            <Section className="dash-valuation-sub">Pre-money | methodology: {result.methodology?.replaceAll("_", " ")}</Section>
 
                             {result.value_drivers?.length > 0 && (
                                 <>
-                                    <div className="dash-section-title">Value Drivers</div>
-                                    <div className="dash-list">{result.value_drivers.map((s, i) => <div key={i} className="dash-list-item"><span className="bullet">•</span>{s}</div>)}</div>
+                                    <Section className="dash-section-title">Value Drivers</Section>
+                                    <Section className="dash-list">{result.value_drivers.map((s, i) => <div key={i} className="dash-list-item"><span className="bullet">•</span>{s}</div>)}</Section>
                                 </>
                             )}
                             {result.key_risks?.length > 0 && (
                                 <>
-                                    <div className="dash-section-title">Key Risks</div>
-                                    <div className="dash-list">{result.key_risks.map((s, i) => <div key={i} className="dash-list-item"><span className="bullet">•</span>{s}</div>)}</div>
+                                    <Section className="dash-section-title">Key Risks</Section>
+                                    <Section className="dash-list">{result.key_risks.map((s, i) => <div key={i} className="dash-list-item"><span className="bullet">•</span>{s}</div>)}</Section>
                                 </>
                             )}
                             {result.negotiation_guidance && (
                                 <>
-                                    <div className="dash-section-title">Negotiation Guidance</div>
-                                    <p style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6 }}>{result.negotiation_guidance}</p>
+                                    <Section className="dash-section-title">Negotiation Guidance</Section>
+                                    <Section as="p" style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6 }}>{result.negotiation_guidance}</Section>
                                 </>
                             )}
                             {result.caveat && (
-                                <p style={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", color: "#94A3B8", marginTop: 16, lineHeight: 1.6 }}>
+                                <Section as="p" style={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", color: "#94A3B8", marginTop: 16, lineHeight: 1.6 }}>
                                     {result.caveat}
-                                </p>
+                                </Section>
                             )}
-                        </div>
+                        </ResultCard>
                     )}
                 </div>
             </div>

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { useOutletContext } from "react-router-dom";
 import { apiGetAnalyses } from "./pitchmateApi";
+import { useDashboardContext } from "./dashboardContext";
 
 /**
  * Shared per-module state for the dashboard feature pages (market, competition,
@@ -19,6 +19,9 @@ const MODULE_LABEL = {
     investors: "Investors targeted",
     valuation: "Valuation estimated",
     deck: "Deck drafted",
+    debrief: "Meeting debriefed",
+    finance: "Financials framed",
+    traction: "Traction framed",
 };
 
 // Readiness weight each module contributes — used for the "+X% ready" toast the
@@ -42,7 +45,7 @@ export function relativeTime(iso) {
 }
 
 export function useAnalysisModule(module) {
-    const ctx = useOutletContext();
+    const ctx = useDashboardContext();
     const { profile, refreshProfile, notify } = ctx;
     const [saved, setSaved] = useState(null); // { inputs, result, updated_at } | null
     const [allResults, setAllResults] = useState({}); // every module's saved analysis (for cross-page pull)

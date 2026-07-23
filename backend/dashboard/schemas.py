@@ -158,6 +158,73 @@ class DeckExportResult(BaseModel):
     download_url: str
 
 
+# ─── Financial Narrative (unit economics story) ──────────────────────────────
+
+class FinanceRequest(BaseModel):
+    revenue: Optional[str] = Field("", description='MRR or ARR, e.g. "$40K MRR". Empty/"pre-revenue" if none.')
+    cac: Optional[str] = Field("", description='Customer acquisition cost, e.g. "$1,200".')
+    ltv: Optional[str] = Field("", description='Lifetime value, e.g. "$4,800".')
+    monthly_burn: Optional[str] = Field("", description='Net monthly burn, e.g. "$60K".')
+    cash_in_bank: Optional[str] = Field("", description='Current cash, e.g. "$720K".')
+    gross_margin: Optional[str] = Field("", description='Gross margin %, e.g. "78%".')
+    context: Optional[str] = Field("", description="Any extra financial context.")
+
+
+class FinanceResult(BaseModel):
+    ltv_cac_ratio: Optional[float] = None
+    ltv_cac_formatted: str = "n/a"
+    runway_months: Optional[float] = None
+    cac_formatted: str = "n/a"
+    ltv_formatted: str = "n/a"
+    monthly_burn_formatted: str = "n/a"
+    cash_formatted: str = "n/a"
+    gross_margin_pct: Optional[float] = None
+    narrative: str = Field(..., description="Investor-facing financial story.")
+    strengths: list[str] = Field(default_factory=list)
+    red_flags: list[str] = Field(default_factory=list)
+    talking_points: list[str] = Field(default_factory=list)
+    benchmark_notes: str = ""
+    automatic_flags: list[str] = Field(default_factory=list)
+
+
+# ─── Traction Framing (social proof) ─────────────────────────────────────────
+
+class TractionRequest(BaseModel):
+    metrics: str = Field(..., description="Whatever numbers exist — users, revenue, growth, retention, waitlist, pilots.")
+    customer_quotes: Optional[str] = Field("", description="Raw customer/user quotes or testimonials.")
+    milestones: Optional[str] = Field("", description="Notable milestones — launches, partnerships, hires.")
+    stage: Optional[str] = Field("", description="Lifecycle stage for calibration.")
+
+
+class TractionResult(BaseModel):
+    traction_narrative: str = Field(..., description="Investor-facing momentum story.")
+    proof_points: list[str] = Field(default_factory=list)
+    social_proof: list[str] = Field(default_factory=list)
+    momentum_story: str = ""
+    gaps: list[str] = Field(default_factory=list)
+    metrics_to_track: list[str] = Field(default_factory=list)
+
+
+# ─── Meeting Debrief (signal reading) ────────────────────────────────────────
+
+class MeetingDebriefRequest(BaseModel):
+    investor_name: str = Field(..., description="Investor or firm the founder met with.")
+    investor_type: str = Field("seed VC", description='e.g. "angel", "seed VC", "Series A VC".')
+    meeting_notes: str = Field(..., description="What was said / how the meeting went, in the founder's words.")
+    ask: Optional[str] = Field("", description="What the founder is raising / asked for.")
+
+
+class MeetingDebriefResult(BaseModel):
+    signal: str = Field(..., description='Overall read: "warm", "lukewarm", or "dead".')
+    signal_reasoning: str = Field(..., description="One line explaining the classification.")
+    positive_signals: list[str] = Field(default_factory=list)
+    concerns: list[str] = Field(default_factory=list, description="Objections or concerns raised/implied.")
+    recommended_next_steps: list[str] = Field(default_factory=list)
+    suggested_followup_timing: str = Field("", description='e.g. "48 hours", "2-3 weeks with an update".')
+    materials_to_send: list[str] = Field(default_factory=list)
+    draft_followup_message: str = Field("", description="Ready-to-send follow-up email/message.")
+
+
 # ─── Saved analyses (persistence) ────────────────────────────────────────────
 
 class SavedAnalysis(BaseModel):

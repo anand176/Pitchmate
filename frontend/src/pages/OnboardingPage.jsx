@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate, useOutletContext } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
     apiGetProfile,
     apiUpdateProfile,
     apiUploadDocumentFile,
     apiSaveContext,
 } from "../pitchmateApi";
+import { useDashboardContext } from "../dashboardContext";
 
 const STAGES = [
     { value: "idea", label: "Idea" },
@@ -36,7 +37,7 @@ const EMPTY = {
  */
 export default function OnboardingPage() {
     const navigate = useNavigate();
-    const { sessionId, setSessionId, refreshProfile } = useOutletContext();
+    const { sessionId, setSessionId, refreshProfile } = useDashboardContext();
     const [step, setStep] = useState(0);
     const [form, setForm] = useState(EMPTY);
     const [saving, setSaving] = useState(false);

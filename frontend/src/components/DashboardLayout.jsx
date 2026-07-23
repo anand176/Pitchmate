@@ -1,31 +1,69 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { NavLink, Outlet, Navigate, useLocation } from "react-router-dom";
+import { NavLink, Navigate, Routes, Route, useLocation } from "react-router-dom";
 import { apiLogout, apiGetProfile } from "../pitchmateApi";
 import { DASHBOARD_STYLES } from "../theme";
 import ChatPanel from "./ChatPanel";
+import { DashboardContext } from "../dashboardContext";
+import { motion, AnimatePresence, useReducedMotion, pageVariants, SPRING_SOFT } from "../motion";
+import HomePage from "../pages/HomePage.jsx";
+import OnboardingPage from "../pages/OnboardingPage.jsx";
+import MarketPage from "../pages/MarketPage.jsx";
+import CompetitionPage from "../pages/CompetitionPage.jsx";
+import GTMPage from "../pages/GTMPage.jsx";
+import InvestorsPage from "../pages/InvestorsPage.jsx";
+import ValuationPage from "../pages/ValuationPage.jsx";
+import DeckPage from "../pages/DeckPage.jsx";
+import FinancePage from "../pages/FinancePage.jsx";
+import TractionPage from "../pages/TractionPage.jsx";
+import MeetingDebriefPage from "../pages/MeetingDebriefPage.jsx";
+import SettingsPage from "../pages/SettingsPage.jsx";
 import {
     HomeIcon, TrendingUpIcon, UsersIcon, TargetIcon, HandshakeIcon,
     CoinsIcon, FileTextIcon, SettingsIcon, LogOutIcon, MessageCircleIcon, LogoMark,
-    CheckCircleIcon,
+    CheckCircleIcon, RadarIcon, WalletIcon, AwardIcon,
 } from "../icons";
 
 const NAV_ITEMS = [
     { to: "/", icon: HomeIcon, label: "Home", end: true },
     { to: "/market", icon: TrendingUpIcon, label: "Market" },
     { to: "/competition", icon: UsersIcon, label: "Competition" },
+    { to: "/traction", icon: AwardIcon, label: "Traction" },
     { to: "/gtm", icon: TargetIcon, label: "GTM Strategy" },
-    { to: "/investors", icon: HandshakeIcon, label: "Investors" },
+    { to: "/finance", icon: WalletIcon, label: "Financials" },
     { to: "/valuation", icon: CoinsIcon, label: "Valuation" },
+    { to: "/investors", icon: HandshakeIcon, label: "Investors" },
     { to: "/deck", icon: FileTextIcon, label: "Deck" },
+    { to: "/debrief", icon: RadarIcon, label: "Meeting Debrief" },
 ];
+
+/** Wraps a routed page so it fades+rises in on route change (skipped entirely under reduced motion). */
+function AnimatedPage({ children }) {
+    const reduce = useReducedMotion();
+    if (reduce) return children;
+    return (
+        <motion.div variants={pageVariants} initial="hidden" animate="visible" exit="exit">
+            {children}
+        </motion.div>
+    );
+}
 
 /**
  * DashboardLayout - top header + left nav sidebar + routed tab content.
  * Soft-gates first-time users to /onboarding until core profile fields exist
  * (unless they already dismissed / completed the wizard).
+ *
+ * Owns a nested, location-keyed <Routes> (rather than a plain <Outlet/>) so
+ * AnimatePresence can crossfade between pages: on navigation, the outgoing
+ * <Routes location=.../> keeps rendering with the OLD location (Framer keeps
+ * the previous element instance mounted for the exit animation) while the
+ * new one enters. A plain <Outlet/> would immediately re-resolve to the new
+ * page on every render, even mid-exit, because it always reads the live
+ * router location — this component's own `user`/chat state persists across
+ * navigations either way since DashboardLayout itself never remounts.
  */
 export default function DashboardLayout({ user }) {
     const location = useLocation();
+    const reduceMotion = useReducedMotion();
     const [chatOpen, setChatOpen] = useState(false);
     const [messages, setMessages] = useState([]);
     const [sessionId, setSessionId] = useState(null);
@@ -112,6 +150,15 @@ export default function DashboardLayout({ user }) {
         return <Navigate to="/onboarding" replace />;
     }
 
+    const ctxValue = {
+        sessionId,
+        setSessionId,
+        profile,
+        refreshProfile,
+        notify,
+        openChat: () => setChatOpen(true),
+    };
+
     return (
         <div className="dash-app">
             <style>{DASHBOARD_STYLES}</style>
@@ -125,10 +172,15 @@ export default function DashboardLayout({ user }) {
                 <div className="dash-header-right">
                     <div className="dash-edition">{editionDate}</div>
                     <div className="dash-user-badge">{userInitial}</div>
-                    <button className="dash-btn-ghost" onClick={handleSignOut}>
+                    <motion.button
+                        className="dash-btn-ghost"
+                        onClick={handleSignOut}
+                        whileHover={reduceMotion ? undefined : { y: -1 }}
+                        whileTap={reduceMotion ? undefined : { scale: 0.98 }}
+                    >
                         <LogOutIcon size={14} />
                         Sign out
-                    </button>
+                    </motion.button>
                 </div>
             </header>
 
@@ -153,49 +205,97 @@ export default function DashboardLayout({ user }) {
                                     end={item.end}
                                     className={({ isActive }) => `dash-nav-item ${isActive ? "active" : ""}`}
                                 >
-                                    <span className="dash-nav-icon"><ItemIcon size={18} /></span>
-                                    {item.label}
+                                    {({ isActive }) => (
+                                        <>
+                                            {isActive && !reduceMotion && (
+                                                <motion.span
+                                                    className="dash-nav-active-bg"
+                                                    layoutId="dash-nav-active-bg"
+                                                    transition={SPRING_SOFT}
+                                                />
+                                            )}
+                                            {isActive && reduceMotion && <span className="dash-nav-active-bg" />}
+                                            <span className="dash-nav-icon"><ItemIcon size={18} /></span>
+                                            {item.label}
+                                        </>
+                                    )}
                                 </NavLink>
                             );
                         })}
                         <div className="dash-nav-divider" />
                         <NavLink to="/settings" className={({ isActive }) => `dash-nav-item ${isActive ? "active" : ""}`}>
-                            <span className="dash-nav-icon"><SettingsIcon size={18} /></span>
-                            Profile & docs
+                            {({ isActive }) => (
+                                <>
+                                    {isActive && !reduceMotion && (
+                                        <motion.span
+                                            className="dash-nav-active-bg"
+                                            layoutId="dash-nav-active-bg"
+                                            transition={SPRING_SOFT}
+                                        />
+                                    )}
+                                    {isActive && reduceMotion && <span className="dash-nav-active-bg" />}
+                                    <span className="dash-nav-icon"><SettingsIcon size={18} /></span>
+                                    Profile & docs
+                                </>
+                            )}
                         </NavLink>
                     </aside>
                 )}
 
                 <main className="dash-content">
-                    <Outlet
-                        context={{
-                            sessionId,
-                            setSessionId,
-                            profile,
-                            refreshProfile,
-                            notify,
-                            openChat: () => setChatOpen(true),
-                        }}
-                    />
+                    <DashboardContext.Provider value={ctxValue}>
+                        <AnimatePresence mode="wait" initial={false}>
+                            <Routes location={location} key={location.pathname}>
+                                <Route index element={<AnimatedPage><HomePage /></AnimatedPage>} />
+                                <Route path="onboarding" element={<AnimatedPage><OnboardingPage /></AnimatedPage>} />
+                                <Route path="market" element={<AnimatedPage><MarketPage /></AnimatedPage>} />
+                                <Route path="competition" element={<AnimatedPage><CompetitionPage /></AnimatedPage>} />
+                                <Route path="gtm" element={<AnimatedPage><GTMPage /></AnimatedPage>} />
+                                <Route path="traction" element={<AnimatedPage><TractionPage /></AnimatedPage>} />
+                                <Route path="finance" element={<AnimatedPage><FinancePage /></AnimatedPage>} />
+                                <Route path="investors" element={<AnimatedPage><InvestorsPage /></AnimatedPage>} />
+                                <Route path="valuation" element={<AnimatedPage><ValuationPage /></AnimatedPage>} />
+                                <Route path="deck" element={<AnimatedPage><DeckPage /></AnimatedPage>} />
+                                <Route path="debrief" element={<AnimatedPage><MeetingDebriefPage /></AnimatedPage>} />
+                                <Route path="settings" element={<AnimatedPage><SettingsPage /></AnimatedPage>} />
+                                <Route path="*" element={<Navigate to="/" replace />} />
+                            </Routes>
+                        </AnimatePresence>
+                    </DashboardContext.Provider>
                 </main>
             </div>
 
-            {toasts.length > 0 && (
-                <div className="dash-toast-stack" aria-live="polite">
+            <div className="dash-toast-stack" aria-live="polite">
+                <AnimatePresence>
                     {toasts.map((t) => (
-                        <div key={t.id} className="dash-toast success">
+                        <motion.div
+                            key={t.id}
+                            className="dash-toast success"
+                            layout={!reduceMotion}
+                            initial={reduceMotion ? false : { opacity: 0, y: 10, scale: 0.96 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96, transition: { duration: 0.15 } }}
+                            transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+                        >
                             <span className="toast-mark"><CheckCircleIcon size={12} strokeWidth={2.5} /></span>
                             <span>{t.message}</span>
                             {t.gain ? <span className="toast-gain">{t.gain}</span> : null}
-                        </div>
+                        </motion.div>
                     ))}
-                </div>
-            )}
+                </AnimatePresence>
+            </div>
 
             {!chatOpen && !onOnboarding && (
-                <button className="chat-fab" onClick={() => setChatOpen(true)} title="Chat with Pitchmate" aria-label="Chat with Pitchmate">
+                <motion.button
+                    className="chat-fab"
+                    onClick={() => setChatOpen(true)}
+                    title="Chat with Pitchmate"
+                    aria-label="Chat with Pitchmate"
+                    whileHover={reduceMotion ? undefined : { y: -2, scale: 1.03 }}
+                    whileTap={reduceMotion ? undefined : { scale: 0.96 }}
+                >
                     <MessageCircleIcon size={24} strokeWidth={1.5} />
-                </button>
+                </motion.button>
             )}
 
             <ChatPanel

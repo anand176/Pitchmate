@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import { apiDashboardGTM } from "../pitchmateApi";
 import { TargetIcon } from "../icons";
 import { useAnalysisModule, relativeTime } from "../useAnalysisModule";
+import { ResultCard, Section, MotionButton } from "../motion";
 
 export default function GTMPage() {
     const { profile, saved, loadingSaved, reportRun } = useAnalysisModule("gtm");
     const [form, setForm] = useState({ product_description: "", target_market: "" });
     const [result, setResult] = useState(null);
+    const [resultVersion, setResultVersion] = useState(0);
     const [lastRun, setLastRun] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -32,6 +34,7 @@ export default function GTMPage() {
         try {
             const data = await apiDashboardGTM(form);
             setResult(data);
+            setResultVersion((v) => v + 1);
             setLastRun(new Date().toISOString());
             reportRun(data, form);
         } catch (err) {
@@ -62,9 +65,9 @@ export default function GTMPage() {
                         <textarea className="dash-textarea" placeholder="e.g. US small businesses, 1-20 employees"
                             value={form.target_market} onChange={(e) => update("target_market", e.target.value)} rows={3} />
                     </div>
-                    <button className="dash-btn-primary" type="submit" disabled={!canSubmit || loading}>
+                    <MotionButton type="submit" disabled={!canSubmit || loading}>
                         {loading ? "Building plan..." : "Build GTM Plan"}
-                    </button>
+                    </MotionButton>
                     {error && <div className="dash-error">{error}</div>}
                 </form>
 
@@ -76,50 +79,50 @@ export default function GTMPage() {
                         <div className="dash-card"><div className="dash-empty"><span className="dash-empty-icon"><TargetIcon size={20} /></span>Describe your product and target market to get a phased GTM strategy.</div></div>
                     )}
                     {result && (
-                        <div className="dash-card">
+                        <ResultCard key={resultVersion} animate={resultVersion > 0}>
                             {lastRun && <div className="dash-lastrun">Last run · {relativeTime(lastRun)}</div>}
-                            <div className="dash-tag">{result.inferred_market_type}</div>
+                            <Section as="span" className="dash-tag">{result.inferred_market_type}</Section>
 
-                            <div className="dash-section-title">Suggested Channels</div>
-                            <div>{result.suggested_channels?.map((c, i) => <span key={i} className="dash-tag">{c}</span>)}</div>
+                            <Section className="dash-section-title">Suggested Channels</Section>
+                            <Section>{result.suggested_channels?.map((c, i) => <span key={i} className="dash-tag">{c}</span>)}</Section>
 
-                            <div className="dash-section-title">Pricing Models</div>
-                            <div>{result.suggested_pricing_models?.map((c, i) => <span key={i} className="dash-tag">{c}</span>)}</div>
+                            <Section className="dash-section-title">Pricing Models</Section>
+                            <Section>{result.suggested_pricing_models?.map((c, i) => <span key={i} className="dash-tag">{c}</span>)}</Section>
 
                             {result.phases?.length > 0 && (
                                 <>
-                                    <div className="dash-section-title">Phased Plan</div>
+                                    <Section className="dash-section-title">Phased Plan</Section>
                                     {result.phases.map((phase, i) => (
-                                        <div key={i} className="dash-phase">
+                                        <Section key={i} className="dash-phase">
                                             <h4>{phase.name}</h4>
                                             <p>{phase.focus}</p>
                                             <div className="dash-list">
                                                 {phase.key_actions?.map((a, j) => <div key={j} className="dash-list-item"><span className="bullet">•</span>{a}</div>)}
                                             </div>
-                                        </div>
+                                        </Section>
                                     ))}
                                 </>
                             )}
 
                             {result.primary_icp && (
                                 <>
-                                    <div className="dash-section-title">Primary ICP</div>
-                                    <p style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6 }}>{result.primary_icp}</p>
+                                    <Section className="dash-section-title">Primary ICP</Section>
+                                    <Section as="p" style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6 }}>{result.primary_icp}</Section>
                                 </>
                             )}
                             {result.early_adopter_profile && (
                                 <>
-                                    <div className="dash-section-title">Early Adopter Profile</div>
-                                    <p style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6 }}>{result.early_adopter_profile}</p>
+                                    <Section className="dash-section-title">Early Adopter Profile</Section>
+                                    <Section as="p" style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6 }}>{result.early_adopter_profile}</Section>
                                 </>
                             )}
                             {result.recommended_sales_motion && (
                                 <>
-                                    <div className="dash-section-title">Recommended Sales Motion</div>
-                                    <p style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6 }}>{result.recommended_sales_motion}</p>
+                                    <Section className="dash-section-title">Recommended Sales Motion</Section>
+                                    <Section as="p" style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6 }}>{result.recommended_sales_motion}</Section>
                                 </>
                             )}
-                        </div>
+                        </ResultCard>
                     )}
                 </div>
             </div>

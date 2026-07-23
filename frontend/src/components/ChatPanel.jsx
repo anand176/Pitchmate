@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { apiPitchmate, apiDownloadArtifact, apiListDocuments } from "../pitchmateApi";
 import { formatMessage } from "../theme";
 import { SendIcon, CloseIcon, SparklesIcon, CheckCircleIcon, LogoMark, FileTextIcon } from "../icons";
+import { motion, AnimatePresence, useReducedMotion, SPRING_SOFT, SPRING, EASE } from "../motion";
 
 const STARTER_PROMPTS = [
     "Tighten my problem & solution into a 60-second pitch",
@@ -17,11 +18,22 @@ const AGENT_STEPS = [
     { id: "respond", label: "Generating advice" },
 ];
 
+const overlayVariants = { closed: { opacity: 0 }, open: { opacity: 1 } };
+const panelVariants = { closed: { x: "100%" }, open: { x: 0 } };
+const bubbleVariants = {
+    hidden: { opacity: 0, y: 8 },
+    visible: (delay) => ({ opacity: 1, y: 0, transition: { duration: 0.22, ease: EASE, delay } }),
+};
+
 /**
  * ChatPanel - slide-out chat panel (replaces the old full-page chat UI).
  * Lives at the dashboard shell level so it can be opened from any tab via the
  * floating action button, while `sessionId`/`messages` persist across tab
  * navigation (state is lifted to `DashboardLayout`).
+ *
+ * Always mounted regardless of `open` (open/close is purely visual — a
+ * position spring, not a mount/unmount) so chat state survives both route
+ * changes and the panel being closed.
  */
 export default function ChatPanel({ open, onClose, messages, setMessages, sessionId, setSessionId, profileComplete }) {
     const [input, setInput] = useState("");
@@ -30,6 +42,8 @@ export default function ChatPanel({ open, onClose, messages, setMessages, sessio
     const [docCount, setDocCount] = useState(null);
     const chatRef = useRef(null);
     const textareaRef = useRef(null);
+    const prevMessagesLen = useRef(messages.length);
+    const reduceMotion = useReducedMotion();
 
     useEffect(() => {
         if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
@@ -95,10 +109,39 @@ export default function ChatPanel({ open, onClose, messages, setMessages, sessio
     const showWelcome = messages.length === 0 && !loading;
     const showNudgeStarters = onlySystemNudge && !loading;
 
+    // Newly-appended messages (since the last render) stagger in ~40ms apart;
+    // messages already on screen (e.g. after reopening the panel) don't replay.
+    const firstNewIdx = prevMessagesLen.current;
+    useEffect(() => {
+        prevMessagesLen.current = messages.length;
+    }, [messages.length]);
+
+    // Under reduced motion the panel/overlay still use these variants (so the
+    // open/closed value is the single source of truth) but with a 0-duration
+    // transition, which fully disables the animated frames rather than just
+    // shortening them — the element jumps straight to its resting position.
+    const instant = { duration: 0 };
+
     return (
         <>
-            <div className={`chat-overlay ${open ? "open" : ""}`} onClick={onClose} />
-            <div className={`chat-panel ${open ? "open" : ""}`} role="dialog" aria-label="Pitchmate chat">
+            <motion.div
+                className="chat-overlay"
+                initial={false}
+                variants={overlayVariants}
+                animate={open ? "open" : "closed"}
+                transition={reduceMotion ? instant : { duration: 0.22, ease: EASE }}
+                style={{ pointerEvents: open ? "auto" : "none" }}
+                onClick={onClose}
+            />
+            <motion.div
+                className="chat-panel"
+                role="dialog"
+                aria-label="Pitchmate chat"
+                initial={false}
+                variants={panelVariants}
+                animate={open ? "open" : "closed"}
+                transition={reduceMotion ? instant : SPRING_SOFT}
+            >
                 <div className="chat-panel-header">
                     <div className="dash-logo-mark" style={{ width: 30, height: 30 }}>
                         <LogoMark size={16} />
@@ -111,7 +154,7 @@ export default function ChatPanel({ open, onClose, messages, setMessages, sessio
                         type="button"
                         className="dash-btn-ghost"
                         style={{ marginLeft: sessionId ? 8 : "auto", padding: "5px 12px", minHeight: 32 }}
-                        onClick={() => { setMessages([]); setSessionId(null); setInput(""); }}
+                        onClick={() => { setMessages([]); setSessionId(null); setInput(""); prevMessagesLen.current = 0; }}
                         title="Start a new chat"
                     >
                         New
@@ -141,71 +184,100 @@ export default function ChatPanel({ open, onClose, messages, setMessages, sessio
                             )}
                             <div className="chat-starters">
                                 {STARTER_PROMPTS.map((p, i) => (
-                                    <button key={i} className="chat-starter-btn" onClick={() => sendMessage(p)}>{p}</button>
+                                    <motion.button
+                                        key={i}
+                                        className="chat-starter-btn"
+                                        onClick={() => sendMessage(p)}
+                                        whileHover={reduceMotion ? undefined : { x: 2 }}
+                                        whileTap={reduceMotion ? undefined : { scale: 0.98 }}
+                                    >
+                                        {p}
+                                    </motion.button>
                                 ))}
                             </div>
                         </div>
                     )}
 
-                    {messages.map((msg, i) => {
-                        let downloadMatches = [];
-                        let drawingUrl = null;
-                        if (msg.role === "assistant" && typeof msg.content === "string") {
-                            const fromLabel = [...(msg.content.matchAll(/Download:\s*([^\s]+\.(?:pdf|txt|docx))/gi) || [])].map(m => m[1]);
-                            const fromFilename = [...(msg.content.matchAll(/(deck_[^\s]+\.(?:pdf|docx)|executive_summary_[^\s]+\.pdf|due_diligence_qa_[^\s]+\.pdf|elevator_pitch_[^\s]+\.txt)/gi) || [])].map(m => m[1]);
-                            const seen = new Set();
-                            downloadMatches = [...fromLabel, ...fromFilename].filter(f => {
-                                if (seen.has(f)) return false;
-                                seen.add(f);
-                                return true;
-                            });
-                            const urlMatch = msg.content.match(/https?:\/\/[^\s<>"')\]]+/);
-                            if (urlMatch && /diagrams\.net|draw\.io/i.test(urlMatch[0])) drawingUrl = urlMatch[0];
-                        }
-                        return (
-                            <div key={i} className={`chat-message ${msg.role}`}>
-                                <div className={`chat-avatar ${msg.role === "assistant" ? "ai" : "user-av"}`}>
-                                    {msg.role === "assistant" ? <SparklesIcon size={13} /> : "U"}
-                                </div>
-                                <div className="chat-bubble-wrap">
-                                    <div
-                                        className={`chat-bubble ${msg.role === "assistant" ? "ai" : "user"} ${msg.isError ? "err" : ""} ${msg.isSystem ? "system" : ""}`}
-                                        dangerouslySetInnerHTML={{ __html: msg.role === "assistant" ? formatMessage(msg.content) : msg.content }}
-                                    />
-                                    {downloadMatches.length > 0 && (
-                                        <div className="chat-download-row">
-                                            {downloadMatches.map((filename, j) => (
+                    <AnimatePresence initial={false}>
+                        {messages.map((msg, i) => {
+                            let downloadMatches = [];
+                            let drawingUrl = null;
+                            if (msg.role === "assistant" && typeof msg.content === "string") {
+                                const fromLabel = [...(msg.content.matchAll(/Download:\s*([^\s]+\.(?:pdf|txt|docx))/gi) || [])].map(m => m[1]);
+                                const fromFilename = [...(msg.content.matchAll(/(deck_[^\s]+\.(?:pdf|docx)|executive_summary_[^\s]+\.pdf|due_diligence_qa_[^\s]+\.pdf|elevator_pitch_[^\s]+\.txt)/gi) || [])].map(m => m[1]);
+                                const seen = new Set();
+                                downloadMatches = [...fromLabel, ...fromFilename].filter(f => {
+                                    if (seen.has(f)) return false;
+                                    seen.add(f);
+                                    return true;
+                                });
+                                const urlMatch = msg.content.match(/https?:\/\/[^\s<>"')\]]+/);
+                                if (urlMatch && /diagrams\.net|draw\.io/i.test(urlMatch[0])) drawingUrl = urlMatch[0];
+                            }
+                            const isNew = i >= firstNewIdx;
+                            const staggerDelay = isNew ? Math.min(i - firstNewIdx, 4) * 0.04 : 0;
+                            return (
+                                <motion.div
+                                    key={i}
+                                    layout={!reduceMotion}
+                                    className={`chat-message ${msg.role}`}
+                                    custom={staggerDelay}
+                                    initial={reduceMotion || !isNew ? false : "hidden"}
+                                    animate="visible"
+                                    variants={reduceMotion ? undefined : bubbleVariants}
+                                    exit={reduceMotion ? undefined : { opacity: 0 }}
+                                >
+                                    <div className={`chat-avatar ${msg.role === "assistant" ? "ai" : "user-av"}`}>
+                                        {msg.role === "assistant" ? <SparklesIcon size={13} /> : "U"}
+                                    </div>
+                                    <div className="chat-bubble-wrap">
+                                        <div
+                                            className={`chat-bubble ${msg.role === "assistant" ? "ai" : "user"} ${msg.isError ? "err" : ""} ${msg.isSystem ? "system" : ""}`}
+                                            dangerouslySetInnerHTML={{ __html: msg.role === "assistant" ? formatMessage(msg.content) : msg.content }}
+                                        />
+                                        {downloadMatches.length > 0 && (
+                                            <div className="chat-download-row">
+                                                {downloadMatches.map((filename, j) => (
+                                                    <button
+                                                        key={j}
+                                                        type="button"
+                                                        className="chat-download-btn"
+                                                        onClick={() => apiDownloadArtifact(filename).catch(e => alert(e.message))}
+                                                    >
+                                                        {filename.endsWith(".pdf") ? "PDF" : filename.endsWith(".docx") ? "DOCX" : "Download"}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                        {drawingUrl && (
+                                            <div className="chat-download-row">
                                                 <button
-                                                    key={j}
                                                     type="button"
                                                     className="chat-download-btn"
-                                                    onClick={() => apiDownloadArtifact(filename).catch(e => alert(e.message))}
+                                                    onClick={() => window.open(drawingUrl, "_blank", "noopener,noreferrer")}
                                                 >
-                                                    {filename.endsWith(".pdf") ? "PDF" : filename.endsWith(".docx") ? "DOCX" : "Download"}
+                                                    View drawing
                                                 </button>
-                                            ))}
-                                        </div>
-                                    )}
-                                    {drawingUrl && (
-                                        <div className="chat-download-row">
-                                            <button
-                                                type="button"
-                                                className="chat-download-btn"
-                                                onClick={() => window.open(drawingUrl, "_blank", "noopener,noreferrer")}
-                                            >
-                                                View drawing
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        );
-                    })}
+                                            </div>
+                                        )}
+                                    </div>
+                                </motion.div>
+                            );
+                        })}
+                    </AnimatePresence>
 
                     {showNudgeStarters && (
                         <div className="chat-starters" style={{ padding: "0 16px 12px" }}>
                             {STARTER_PROMPTS.map((p, i) => (
-                                <button key={i} className="chat-starter-btn" onClick={() => sendMessage(p)}>{p}</button>
+                                <motion.button
+                                    key={i}
+                                    className="chat-starter-btn"
+                                    onClick={() => sendMessage(p)}
+                                    whileHover={reduceMotion ? undefined : { y: -1 }}
+                                    whileTap={reduceMotion ? undefined : { scale: 0.98 }}
+                                >
+                                    {p}
+                                </motion.button>
                             ))}
                         </div>
                     )}
@@ -215,10 +287,30 @@ export default function ChatPanel({ open, onClose, messages, setMessages, sessio
                             {AGENT_STEPS.map((step, i) => {
                                 const state = i < activeStepIdx ? "done" : i === activeStepIdx ? "active" : "pending";
                                 return (
-                                    <div key={step.id} className={`chat-step ${state}`}>
-                                        <div className="chat-step-dot">{state === "done" && <CheckCircleIcon size={10} strokeWidth={2.5} style={{ color: "#FFFFFF" }} />}</div>
+                                    <motion.div
+                                        key={step.id}
+                                        className={`chat-step ${state}`}
+                                        animate={{ opacity: state === "pending" ? 0.55 : 1 }}
+                                        transition={{ duration: 0.2, ease: EASE }}
+                                    >
+                                        <div className="chat-step-dot">
+                                            {state === "done" && (
+                                                reduceMotion ? (
+                                                    <CheckCircleIcon size={10} strokeWidth={2.5} style={{ color: "#FFFFFF" }} />
+                                                ) : (
+                                                    <motion.span
+                                                        initial={{ scale: 0 }}
+                                                        animate={{ scale: 1 }}
+                                                        transition={SPRING}
+                                                        style={{ display: "flex" }}
+                                                    >
+                                                        <CheckCircleIcon size={10} strokeWidth={2.5} style={{ color: "#FFFFFF" }} />
+                                                    </motion.span>
+                                                )
+                                            )}
+                                        </div>
                                         {step.label}
-                                    </div>
+                                    </motion.div>
                                 );
                             })}
                         </div>
@@ -236,15 +328,23 @@ export default function ChatPanel({ open, onClose, messages, setMessages, sessio
                             disabled={loading}
                             rows={1}
                         />
-                        <button className="chat-send-btn" onClick={() => sendMessage()} disabled={!input.trim() || loading} title="Send (Enter)" aria-label="Send message">
+                        <motion.button
+                            className="chat-send-btn"
+                            onClick={() => sendMessage()}
+                            disabled={!input.trim() || loading}
+                            title="Send (Enter)"
+                            aria-label="Send message"
+                            whileHover={reduceMotion || !input.trim() || loading ? undefined : { scale: 1.06 }}
+                            whileTap={reduceMotion || !input.trim() || loading ? undefined : { scale: 0.96 }}
+                        >
                             <SendIcon size={15} />
-                        </button>
+                        </motion.button>
                     </div>
                     <p className="chat-hint">
                         <kbd>Enter</kbd> to send | <kbd>Shift+Enter</kbd> new line
                     </p>
                 </div>
-            </div>
+            </motion.div>
         </>
     );
 }

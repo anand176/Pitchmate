@@ -316,6 +316,21 @@ export function apiDashboardDeckExport(sections, format = "pdf") {
     return _postDashboard("deck/export", { ...sections, format });
 }
 
+/** Read an investor meeting's signal + next steps. @returns MeetingDebriefResult */
+export function apiDashboardDebrief({ investor_name, investor_type, meeting_notes, ask }) {
+    return _postDashboard("debrief", { investor_name, investor_type, meeting_notes, ask });
+}
+
+/** Turn raw unit economics into an investor financial narrative. @returns FinanceResult */
+export function apiDashboardFinance(fields) {
+    return _postDashboard("finance", fields);
+}
+
+/** Frame raw early traction into a momentum narrative. @returns TractionResult */
+export function apiDashboardTraction({ metrics, customer_quotes, milestones, stage }) {
+    return _postDashboard("traction", { metrics, customer_quotes, milestones, stage });
+}
+
 /**
  * Fetch the current user's saved analyses (latest per module), so feature pages
  * can restore prior results and pre-fill their forms on return.

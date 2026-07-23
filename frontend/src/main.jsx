@@ -1,17 +1,8 @@
 import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import PitchMateAuth from "./PitchMateAuth.jsx";
 import DashboardLayout from "./components/DashboardLayout.jsx";
-import HomePage from "./pages/HomePage.jsx";
-import OnboardingPage from "./pages/OnboardingPage.jsx";
-import MarketPage from "./pages/MarketPage.jsx";
-import CompetitionPage from "./pages/CompetitionPage.jsx";
-import GTMPage from "./pages/GTMPage.jsx";
-import InvestorsPage from "./pages/InvestorsPage.jsx";
-import ValuationPage from "./pages/ValuationPage.jsx";
-import DeckPage from "./pages/DeckPage.jsx";
-import SettingsPage from "./pages/SettingsPage.jsx";
 import { getStoredAuth } from "./authClient";
 
 function authUserFromStorage() {
@@ -48,18 +39,11 @@ function App() {
     return (
         <BrowserRouter>
             <Routes>
-                <Route element={<DashboardLayout user={user} />}>
-                    <Route index element={<HomePage />} />
-                    <Route path="onboarding" element={<OnboardingPage />} />
-                    <Route path="market" element={<MarketPage />} />
-                    <Route path="competition" element={<CompetitionPage />} />
-                    <Route path="gtm" element={<GTMPage />} />
-                    <Route path="investors" element={<InvestorsPage />} />
-                    <Route path="valuation" element={<ValuationPage />} />
-                    <Route path="deck" element={<DeckPage />} />
-                    <Route path="settings" element={<SettingsPage />} />
-                    <Route path="*" element={<Navigate to="/" replace />} />
-                </Route>
+                {/* DashboardLayout owns its own nested, animated <Routes> for the
+                    workspace tabs (see components/DashboardLayout.jsx) so page
+                    transitions can be animated without remounting the shell
+                    (header/sidebar/chat state) on every navigation. */}
+                <Route path="/*" element={<DashboardLayout user={user} />} />
             </Routes>
         </BrowserRouter>
     );

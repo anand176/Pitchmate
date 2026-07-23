@@ -1,13 +1,17 @@
 import { useEffect, useState } from "react";
-import { Link, useOutletContext } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { apiGetReadiness } from "../pitchmateApi";
 import { CheckCircleIcon, MessageCircleIcon } from "../icons";
+import { useDashboardContext } from "../dashboardContext";
+import { motion, useReducedMotion, useCountUp, SPRING_SOFT } from "../motion";
+
+const MotionLink = motion(Link);
 
 /**
  * Dashboard home — readiness progress + single Next action CTA.
  */
 export default function HomePage() {
-    const { profile, openChat } = useOutletContext();
+    const { profile, openChat } = useDashboardContext();
     const [readiness, setReadiness] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -30,8 +34,11 @@ export default function HomePage() {
     const name = profile?.company_name || "Founder";
     const stage = (profile?.lifecycle_stage || "idea").replace(/_/g, " ");
     const percent = readiness?.overall_percent ?? 0;
+    const clampedPercent = Math.min(100, percent);
     const next = readiness?.next_action || "Complete your startup profile";
     const nextPath = readiness?.next_action_path || "/onboarding";
+    const reduceMotion = useReducedMotion();
+    const displayPercent = useCountUp(percent, { reduce: reduceMotion });
 
     return (
         <div>
@@ -52,16 +59,36 @@ export default function HomePage() {
                     ) : (
                         <>
                             <div className="home-progress-meta">
-                                <span className="home-progress-pct">{percent}%</span>
+                                <span className="home-progress-pct">{displayPercent}%</span>
                                 <span className="home-progress-label">complete</span>
                             </div>
                             <div className="home-progress-bar" role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100}>
-                                <div className="home-progress-fill" style={{ width: `${Math.min(100, percent)}%` }} />
+                                <motion.div
+                                    className="home-progress-fill"
+                                    initial={false}
+                                    animate={{ scaleX: clampedPercent / 100 }}
+                                    transition={reduceMotion ? { duration: 0 } : SPRING_SOFT}
+                                />
                             </div>
                             <ul className="home-milestone-list">
                                 {(readiness?.milestones || []).map((m) => (
                                     <li key={m.id} className={m.done ? "done" : ""}>
-                                        <span className="home-ms-mark">{m.done && <CheckCircleIcon size={11} strokeWidth={2.5} />}</span>
+                                        <span className="home-ms-mark">
+                                            {m.done && (
+                                                reduceMotion ? (
+                                                    <CheckCircleIcon size={11} strokeWidth={2.5} />
+                                                ) : (
+                                                    <motion.span
+                                                        initial={{ scale: 0 }}
+                                                        animate={{ scale: 1 }}
+                                                        transition={SPRING_SOFT}
+                                                        style={{ display: "flex" }}
+                                                    >
+                                                        <CheckCircleIcon size={11} strokeWidth={2.5} />
+                                                    </motion.span>
+                                                )
+                                            )}
+                                        </span>
                                         <span>{m.label}</span>
                                         <span className="home-ms-w">{m.weight}%</span>
                                     </li>
@@ -75,14 +102,26 @@ export default function HomePage() {
                     <h3>Next action</h3>
                     <p className="home-next-copy">{next}</p>
                     <div className="home-next-actions">
-                        <Link className="dash-btn-primary" to={nextPath} style={{ textDecoration: "none", display: "inline-block" }}>
+                        <MotionLink
+                            className="dash-btn-primary"
+                            to={nextPath}
+                            style={{ textDecoration: "none", display: "inline-block" }}
+                            whileHover={reduceMotion ? undefined : { y: -1 }}
+                            whileTap={reduceMotion ? undefined : { scale: 0.98 }}
+                        >
                             Continue
-                        </Link>
+                        </MotionLink>
                         {profile?.profile_complete && (
-                            <button type="button" className="dash-btn-ghost" onClick={() => openChat?.()}>
+                            <motion.button
+                                type="button"
+                                className="dash-btn-ghost"
+                                onClick={() => openChat?.()}
+                                whileHover={reduceMotion ? undefined : { y: -1 }}
+                                whileTap={reduceMotion ? undefined : { scale: 0.98 }}
+                            >
                                 <MessageCircleIcon size={14} />
                                 Ask Pitchmate
-                            </button>
+                            </motion.button>
                         )}
                     </div>
                     {!profile?.profile_complete && (

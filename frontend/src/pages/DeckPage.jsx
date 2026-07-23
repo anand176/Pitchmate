@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { apiDashboardDeck, apiDashboardDeckExport, apiDownloadArtifact } from "../pitchmateApi";
 import { FileTextIcon, SparklesIcon } from "../icons";
 import { useAnalysisModule, relativeTime } from "../useAnalysisModule";
+import { ResultCard, Section, MotionButton } from "../motion";
 
 const SECTION_FIELDS = [
     { key: "problem", label: "Problem" },
@@ -48,6 +49,7 @@ export default function DeckPage() {
     const [companyName, setCompanyName] = useState("");
     const [sections, setSections] = useState({});
     const [result, setResult] = useState(null);
+    const [resultVersion, setResultVersion] = useState(0);
     const [lastRun, setLastRun] = useState(null);
     const [loading, setLoading] = useState(false);
     const [exporting, setExporting] = useState(false);
@@ -94,6 +96,7 @@ export default function DeckPage() {
             const payload = buildPayload();
             const data = await apiDashboardDeck(payload);
             setResult(data);
+            setResultVersion((v) => v + 1);
             setLastRun(new Date().toISOString());
             reportRun(data, payload);
         } catch (err) {
@@ -146,9 +149,9 @@ export default function DeckPage() {
                                 value={sections[key] || ""} onChange={(e) => updateSection(key, e.target.value)} rows={2} />
                         </div>
                     ))}
-                    <button className="dash-btn-primary" type="submit" disabled={!canSubmit || loading}>
+                    <MotionButton type="submit" disabled={!canSubmit || loading}>
                         {loading ? "Drafting..." : "Draft Section Copy"}
-                    </button>
+                    </MotionButton>
                     <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
                         <button type="button" className="dash-btn-secondary" style={{ flex: 1 }} disabled={!canSubmit || exporting} onClick={() => handleExport("pdf")}>
                             {exporting ? "Exporting..." : "Export PDF"}
@@ -168,16 +171,16 @@ export default function DeckPage() {
                         <div className="dash-card"><div className="dash-empty"><span className="dash-empty-icon"><FileTextIcon size={20} /></span>Fill in whatever deck content you have and draft polished, investor-ready copy, or export directly from your own notes.</div></div>
                     )}
                     {result && (
-                        <div className="dash-card">
+                        <ResultCard key={resultVersion} animate={resultVersion > 0}>
                             {lastRun && <div className="dash-lastrun">Last run · {relativeTime(lastRun)}</div>}
                             <h3 style={{ marginBottom: 4 }}>{result.company_name}</h3>
                             {result.sections?.map((s) => (
-                                <div key={s.key} style={{ marginBottom: 14 }}>
+                                <Section key={s.key} style={{ marginBottom: 14 }}>
                                     <div className="dash-section-title">{s.title}</div>
                                     <p style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6 }}>{s.content}</p>
-                                </div>
+                                </Section>
                             ))}
-                        </div>
+                        </ResultCard>
                     )}
                 </div>
             </div>

@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Link, useOutletContext } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
     apiUploadDocument, apiUploadDocumentFile, apiListDocuments,
     apiGetProfile, apiUpdateProfile, apiSaveContext,
 } from "../pitchmateApi";
+import { useDashboardContext } from "../dashboardContext";
 
 const STAGES = [
     { value: "idea", label: "Idea" },
@@ -21,7 +22,7 @@ const STAGES = [
  * Profile & documents — merged Idea Desk + Share Doc + editable lifecycle.
  */
 export default function SettingsPage() {
-    const { sessionId, setSessionId, refreshProfile } = useOutletContext();
+    const { sessionId, setSessionId, refreshProfile } = useDashboardContext();
 
     return (
         <div>

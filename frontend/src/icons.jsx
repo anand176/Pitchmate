@@ -154,6 +154,37 @@ export const PlusIcon = (props) => (
     </Icon>
 );
 
+export const RadarIcon = (props) => (
+    <Icon {...props}>
+        <path d="M19.07 4.93a10 10 0 1 0 1.4 1.4" />
+        <path d="M15.5 8.5a5 5 0 1 0 1 1" />
+        <line x1="12" y1="12" x2="20.5" y2="3.5" />
+        <circle cx="12" cy="12" r="1" fill="currentColor" />
+    </Icon>
+);
+
+export const CopyIcon = (props) => (
+    <Icon {...props}>
+        <rect x="9" y="9" width="11" height="11" rx="2.5" />
+        <path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1" />
+    </Icon>
+);
+
+export const WalletIcon = (props) => (
+    <Icon {...props}>
+        <path d="M3.5 7.5A2.5 2.5 0 0 1 6 5h11.5a1 1 0 0 1 1 1v2" />
+        <path d="M3.5 7.5V17a2 2 0 0 0 2 2h13a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-13a2 2 0 0 1-2-1.5Z" />
+        <circle cx="16.5" cy="13" r="1.2" fill="currentColor" />
+    </Icon>
+);
+
+export const AwardIcon = (props) => (
+    <Icon {...props}>
+        <circle cx="12" cy="9" r="5.5" />
+        <path d="M8.5 13.5 7 21l5-2.5L17 21l-1.5-7.5" />
+    </Icon>
+);
+
 /**
  * Brand mark — an ascending staircase with a rounded ramp tip. Reads as both
  * a traction chart and a launch trajectory. Filled (not stroke), so pass a
