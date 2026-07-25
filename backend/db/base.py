@@ -71,7 +71,42 @@ async def init_db() -> None:
     engine = get_engine()
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        await _migrate_team_columns(conn)
     logger.info("Database tables ensured (users, startup_profiles, ...)")
+
+
+async def _migrate_team_columns(conn) -> None:
+    """
+    Lightweight, idempotent migration for the team-sharing feature added
+    after these tables already existed in deployed databases. `create_all`
+    only creates missing *tables*, not missing *columns* on existing ones, so
+    `team_id` needs to be backfilled by hand:
+
+      1. users.team_id — defaults each existing user to their own solo team
+         (team_id = their own user id, an arbitrary-but-stable unique value).
+      2. startup_profiles / fundraise_rounds / investor_contacts.team_id —
+         backfilled from the owning user's (now-set) team_id, so existing
+         data stays visible to the user who created it.
+
+    Safe to run on every startup — every statement is a no-op once applied.
+    """
+    from sqlalchemy import text
+
+    await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS team_id VARCHAR(36)"))
+    await conn.execute(text("UPDATE users SET team_id = id WHERE team_id IS NULL"))
+    await conn.execute(text("ALTER TABLE users ALTER COLUMN team_id SET NOT NULL"))
+    await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_users_team_id ON users (team_id)"))
+
+    for table in ("startup_profiles", "fundraise_rounds", "investor_contacts"):
+        await conn.execute(text(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS team_id VARCHAR(36)"))
+        await conn.execute(text(
+            f"UPDATE {table} t SET team_id = u.team_id FROM users u "
+            f"WHERE t.user_id = u.id AND t.team_id IS NULL"
+        ))
+        # Fallback for rows whose owning user row is somehow gone — scope to themselves.
+        await conn.execute(text(f"UPDATE {table} SET team_id = user_id WHERE team_id IS NULL"))
+        await conn.execute(text(f"ALTER TABLE {table} ALTER COLUMN team_id SET NOT NULL"))
+        await conn.execute(text(f"CREATE INDEX IF NOT EXISTS ix_{table}_team_id ON {table} (team_id)"))
 
 
 async def close_db() -> None:

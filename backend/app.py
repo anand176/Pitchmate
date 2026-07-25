@@ -78,6 +78,12 @@ from agents.context_router import router as context_router      # noqa: E402
 from knowledge_base.router import router as kb_router           # noqa: E402
 from dashboard.router import router as dashboard_router         # noqa: E402
 from startup.router import router as startup_router            # noqa: E402
+from pipeline.router import router as pipeline_router           # noqa: E402
+from integrations.router import router as integrations_router   # noqa: E402
+from team.router import router as team_router                   # noqa: E402
+from roadmap.router import router as roadmap_router             # noqa: E402
+from runway.router import router as runway_router               # noqa: E402
+from simulator.router import router as simulator_router         # noqa: E402
 
 app.include_router(auth_router)
 app.include_router(agents_router)
@@ -85,6 +91,12 @@ app.include_router(context_router)
 app.include_router(kb_router)
 app.include_router(dashboard_router)
 app.include_router(startup_router)
+app.include_router(pipeline_router)
+app.include_router(integrations_router)
+app.include_router(team_router)
+app.include_router(roadmap_router)
+app.include_router(runway_router)
+app.include_router(simulator_router)
 
 
 @app.get("/health", tags=["Health"])

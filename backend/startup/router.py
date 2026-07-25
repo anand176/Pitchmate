@@ -197,13 +197,14 @@ def _to_response(profile: StartupProfile | None) -> StartupProfileResponse:
     )
 
 
-async def _get_or_none(db: AsyncSession, user_id: str) -> StartupProfile | None:
-    return await db.scalar(select(StartupProfile).where(StartupProfile.user_id == user_id))
+async def _get_or_none(db: AsyncSession, team_id: str) -> StartupProfile | None:
+    """One profile per *team* — shared across cofounders (see db/models.py User.team_id)."""
+    return await db.scalar(select(StartupProfile).where(StartupProfile.team_id == team_id))
 
 
-async def get_profile_for_user(db: AsyncSession, user_id: str) -> StartupProfile | None:
+async def get_profile_for_user(db: AsyncSession, team_id: str) -> StartupProfile | None:
     """Shared helper for other routers (e.g. agent context injection)."""
-    return await _get_or_none(db, user_id)
+    return await _get_or_none(db, team_id)
 
 
 @router.get("/profile", response_model=StartupProfileResponse)
@@ -211,7 +212,7 @@ async def get_profile(
     current_user: Annotated[dict, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ):
-    profile = await _get_or_none(db, current_user["id"])
+    profile = await _get_or_none(db, current_user["team_id"])
     return _to_response(profile)
 
 
@@ -230,9 +231,9 @@ async def upsert_profile(
             )
         body.lifecycle_stage = stage
 
-    profile = await _get_or_none(db, current_user["id"])
+    profile = await _get_or_none(db, current_user["team_id"])
     if profile is None:
-        profile = StartupProfile(user_id=current_user["id"])
+        profile = StartupProfile(user_id=current_user["id"], team_id=current_user["team_id"])
         db.add(profile)
 
     data = body.model_dump(exclude_unset=True)
@@ -266,6 +267,6 @@ async def get_readiness(
 ):
     from dashboard.store import get_completed_modules
 
-    profile = await _get_or_none(db, current_user["id"])
+    profile = await _get_or_none(db, current_user["team_id"])
     completed = await get_completed_modules(db, current_user["id"])
     return compute_readiness(profile, completed)

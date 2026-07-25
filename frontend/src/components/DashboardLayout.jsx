@@ -16,11 +16,16 @@ import DeckPage from "../pages/DeckPage.jsx";
 import FinancePage from "../pages/FinancePage.jsx";
 import TractionPage from "../pages/TractionPage.jsx";
 import MeetingDebriefPage from "../pages/MeetingDebriefPage.jsx";
+import PipelinePage from "../pages/PipelinePage.jsx";
+import RoadmapPage from "../pages/RoadmapPage.jsx";
+import JoinTeamPage from "../pages/JoinTeamPage.jsx";
+import SimulatorPage from "../pages/SimulatorPage.jsx";
 import SettingsPage from "../pages/SettingsPage.jsx";
+import ErrorBoundary from "./ErrorBoundary.jsx";
 import {
     HomeIcon, TrendingUpIcon, UsersIcon, TargetIcon, HandshakeIcon,
     CoinsIcon, FileTextIcon, SettingsIcon, LogOutIcon, MessageCircleIcon, LogoMark,
-    CheckCircleIcon, RadarIcon, WalletIcon, AwardIcon,
+    CheckCircleIcon, RadarIcon, WalletIcon, AwardIcon, FunnelIcon, MapIcon, PhoneIcon,
 } from "../icons";
 
 const NAV_ITEMS = [
@@ -32,6 +37,9 @@ const NAV_ITEMS = [
     { to: "/finance", icon: WalletIcon, label: "Financials" },
     { to: "/valuation", icon: CoinsIcon, label: "Valuation" },
     { to: "/investors", icon: HandshakeIcon, label: "Investors" },
+    { to: "/pipeline", icon: FunnelIcon, label: "Pipeline" },
+    { to: "/roadmap", icon: MapIcon, label: "Roadmap" },
+    { to: "/practice", icon: PhoneIcon, label: "Call Practice" },
     { to: "/deck", icon: FileTextIcon, label: "Deck" },
     { to: "/debrief", icon: RadarIcon, label: "Meeting Debrief" },
 ];
@@ -128,6 +136,10 @@ export default function DashboardLayout({ user }) {
     }).format(new Date());
 
     const onOnboarding = location.pathname.startsWith("/onboarding");
+    // /join is exempt too — a freshly-signed-up cofounder accepting an invite
+    // shouldn't get bounced to onboarding before joining the team that
+    // already has a StartupProfile waiting for them.
+    const onJoin = location.pathname.startsWith("/join");
     const needsOnboarding =
         profileLoaded &&
         !!profile &&
@@ -146,7 +158,7 @@ export default function DashboardLayout({ user }) {
         );
     }
 
-    if (needsOnboarding && !onOnboarding) {
+    if (needsOnboarding && !onOnboarding && !onJoin) {
         return <Navigate to="/onboarding" replace />;
     }
 
@@ -244,6 +256,7 @@ export default function DashboardLayout({ user }) {
 
                 <main className="dash-content">
                     <DashboardContext.Provider value={ctxValue}>
+                        <ErrorBoundary resetKey={location.pathname}>
                         <AnimatePresence mode="wait" initial={false}>
                             <Routes location={location} key={location.pathname}>
                                 <Route index element={<AnimatedPage><HomePage /></AnimatedPage>} />
@@ -257,10 +270,15 @@ export default function DashboardLayout({ user }) {
                                 <Route path="valuation" element={<AnimatedPage><ValuationPage /></AnimatedPage>} />
                                 <Route path="deck" element={<AnimatedPage><DeckPage /></AnimatedPage>} />
                                 <Route path="debrief" element={<AnimatedPage><MeetingDebriefPage /></AnimatedPage>} />
+                                <Route path="pipeline" element={<AnimatedPage><PipelinePage /></AnimatedPage>} />
+                                <Route path="roadmap" element={<AnimatedPage><RoadmapPage /></AnimatedPage>} />
+                                <Route path="practice" element={<AnimatedPage><SimulatorPage /></AnimatedPage>} />
+                                <Route path="join" element={<AnimatedPage><JoinTeamPage /></AnimatedPage>} />
                                 <Route path="settings" element={<AnimatedPage><SettingsPage /></AnimatedPage>} />
                                 <Route path="*" element={<Navigate to="/" replace />} />
                             </Routes>
                         </AnimatePresence>
+                        </ErrorBoundary>
                     </DashboardContext.Provider>
                 </main>
             </div>

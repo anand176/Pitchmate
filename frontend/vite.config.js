@@ -39,6 +39,40 @@ export default defineConfig({
                 target: BACKEND_TARGET,
                 changeOrigin: true,
             },
+            // Regex keys (Vite treats a leading "^" as a RegExp, per
+            // http-proxy-middleware) requiring a trailing sub-path — "/pipeline"
+            // bare is also a client-side route (see DashboardLayout NAV_ITEMS),
+            // so a plain string-prefix rule here would hijack direct browser
+            // navigation to that page and send it to FastAPI (404) instead of
+            // falling through to Vite's SPA index.html fallback.
+            "^/pipeline/.+": {
+                target: BACKEND_TARGET,
+                changeOrigin: true,
+            },
+            "^/integrations/.+": {
+                target: BACKEND_TARGET,
+                changeOrigin: true,
+            },
+            // "/roadmap" is also a client-side route (Roadmap board nav item),
+            // same collision concern as "/pipeline" above — regex + trailing
+            // sub-path keeps bare /roadmap on the SPA fallback.
+            "^/roadmap/.+": {
+                target: BACKEND_TARGET,
+                changeOrigin: true,
+            },
+            "^/team/.+": {
+                target: BACKEND_TARGET,
+                changeOrigin: true,
+            },
+            "^/runway/.+": {
+                target: BACKEND_TARGET,
+                changeOrigin: true,
+            },
+            // "/simulator" is also a client-side route (Call Practice nav item).
+            "^/simulator/.+": {
+                target: BACKEND_TARGET,
+                changeOrigin: true,
+            },
             "/health": {
                 target: BACKEND_TARGET,
                 changeOrigin: true,

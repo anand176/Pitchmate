@@ -3,8 +3,13 @@ import { Link } from "react-router-dom";
 import {
     apiUploadDocument, apiUploadDocumentFile, apiListDocuments,
     apiGetProfile, apiUpdateProfile, apiSaveContext,
+    apiGetIntegrationsStatus, apiGetConnectUrl, apiDisconnectIntegration, apiUpdateNotionSettings,
+    apiGetTeamMembers, apiCreateTeamInvite,
 } from "../pitchmateApi";
 import { useDashboardContext } from "../dashboardContext";
+import { LinkIcon, UsersIcon, CopyIcon, CheckCircleIcon } from "../icons";
+
+const PROVIDER_LABELS = { notion: "Notion", google: "Google (Calendar + Drive)" };
 
 const STAGES = [
     { value: "idea", label: "Idea" },
@@ -31,9 +36,13 @@ export default function SettingsPage() {
                 <p>Update your startup stage, narrative, and knowledge-base uploads.</p>
             </div>
 
-            <ProfilePanelPanel refreshProfile={refreshProfile} sessionId={sessionId} setSessionId={setSessionId} />
+            <ProfileEditorPanel refreshProfile={refreshProfile} sessionId={sessionId} setSessionId={setSessionId} />
+            <div style={{ height: 16 }} />
+            <TeamPanel />
             <div style={{ height: 16 }} />
             <ShareDocPanel />
+            <div style={{ height: 16 }} />
+            <IntegrationsPanel />
         </div>
     );
 }
@@ -202,6 +211,109 @@ function ProfileEditorPanel({ refreshProfile, sessionId, setSessionId }) {
     );
 }
 
+/**
+ * Lightweight cofounder sharing — invite a cofounder via a shareable link
+ * (they join your team_id and see the same StartupProfile, pipeline,
+ * roadmap, and runway tracker). No roles/permissions, just shared data.
+ */
+function TeamPanel() {
+    const [members, setMembers] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+    const [inviteUrl, setInviteUrl] = useState("");
+    const [creating, setCreating] = useState(false);
+    const [copied, setCopied] = useState(false);
+
+    const load = useCallback(async () => {
+        setLoading(true);
+        try {
+            const data = await apiGetTeamMembers();
+            setMembers(data.members || []);
+        } catch (err) {
+            setError(err.message || "Could not load your team.");
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => { load(); }, [load]);
+
+    const handleInvite = async () => {
+        setCreating(true); setError(""); setCopied(false);
+        try {
+            const res = await apiCreateTeamInvite();
+            setInviteUrl(res.invite_url);
+        } catch (err) {
+            setError(err.message || "Could not create an invite link.");
+        } finally {
+            setCreating(false);
+        }
+    };
+
+    const handleCopy = async () => {
+        try {
+            await navigator.clipboard.writeText(inviteUrl);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch {
+            // Clipboard API can be blocked (e.g. insecure context) — the link is still selectable in the input.
+        }
+    };
+
+    return (
+        <div className="kb-panel">
+            <div className="kb-toggle-btn" style={{ cursor: "default" }}>
+                <span>Team</span>
+                <span>{members.length} member{members.length === 1 ? "" : "s"}</span>
+            </div>
+            <div className="kb-body">
+                <p className="kb-desc">
+                    Invite a cofounder to share your startup profile, fundraise pipeline, roadmap, and
+                    runway tracker — everyone on the team sees and edits the same data.
+                </p>
+
+                {loading ? (
+                    <p className="kb-docs-empty">Loading...</p>
+                ) : (
+                    <div className="team-member-list">
+                        {members.map((m) => (
+                            <div className="integration-row" key={m.id}>
+                                <div className="integration-info">
+                                    <span className="integration-dot connected" />
+                                    <div>
+                                        <div className="integration-name">{m.full_name || m.email}{m.is_you && " (you)"}</div>
+                                        <div className="integration-sub">{m.email}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                <div className="team-invite-row">
+                    <button type="button" className="dash-btn-secondary" disabled={creating} onClick={handleInvite}>
+                        <UsersIcon size={14} /> {creating ? "Creating..." : "Invite a cofounder"}
+                    </button>
+                    {inviteUrl && (
+                        <div className="invite-link-box">
+                            <input className="dash-input" readOnly value={inviteUrl} onFocus={(e) => e.target.select()} />
+                            <button type="button" className="dash-copy-btn" onClick={handleCopy}>
+                                {copied ? <><CheckCircleIcon size={13} /> Copied</> : <><CopyIcon size={13} /> Copy</>}
+                            </button>
+                        </div>
+                    )}
+                </div>
+                {inviteUrl && (
+                    <p className="kb-desc" style={{ fontSize: 11.5 }}>
+                        Expires in 72 hours, single use. Anyone with this link who signs in will join your workspace.
+                    </p>
+                )}
+                {error && <div className="dash-error">{error}</div>}
+            </div>
+        </div>
+    );
+}
+
 function ShareDocPanel() {
     const [text, setText] = useState("");
     const [sourceName, setSourceName] = useState("");
@@ -309,6 +421,159 @@ function ShareDocPanel() {
                                 </div>
                             )}
                 </div>
+            </div>
+        </div>
+    );
+}
+
+/**
+ * Connect/disconnect Notion + Google (OAuth) and set the Notion parent page
+ * used for pipeline sync. Reads ?integration=&status= from the OAuth
+ * callback redirect to surface a one-time success/error message.
+ */
+function IntegrationsPanel() {
+    const [integrations, setIntegrations] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [busyProvider, setBusyProvider] = useState(null);
+    const [msg, setMsg] = useState(null);
+    const [notionPageInput, setNotionPageInput] = useState("");
+    const [savingNotionPage, setSavingNotionPage] = useState(false);
+
+    const load = useCallback(async () => {
+        setLoading(true);
+        try {
+            const res = await apiGetIntegrationsStatus();
+            const list = res.integrations || [];
+            setIntegrations(list);
+            const notion = list.find((i) => i.provider === "notion");
+            if (notion?.notion_parent_page_id) setNotionPageInput(notion.notion_parent_page_id);
+        } catch {
+            setIntegrations([]);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => { load(); }, [load]);
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const integration = params.get("integration");
+        const status = params.get("status");
+        if (integration && status) {
+            setMsg({
+                type: status === "connected" ? "success" : "error",
+                text: status === "connected"
+                    ? `${PROVIDER_LABELS[integration] || integration} connected.`
+                    : `Could not connect ${PROVIDER_LABELS[integration] || integration}. Please try again.`,
+            });
+            params.delete("integration"); params.delete("status");
+            const clean = `${window.location.pathname}${params.toString() ? `?${params}` : ""}`;
+            window.history.replaceState({}, "", clean);
+        }
+    }, []);
+
+    const handleConnect = async (provider) => {
+        setBusyProvider(provider); setMsg(null);
+        try {
+            const { authorize_url } = await apiGetConnectUrl(provider);
+            window.location.href = authorize_url;
+        } catch (e) {
+            setMsg({ type: "error", text: e.message || `Could not start ${provider} connection.` });
+            setBusyProvider(null);
+        }
+    };
+
+    const handleDisconnect = async (provider) => {
+        setBusyProvider(provider); setMsg(null);
+        try {
+            await apiDisconnectIntegration(provider);
+            await load();
+        } catch (e) {
+            setMsg({ type: "error", text: e.message || `Could not disconnect ${provider}.` });
+        } finally {
+            setBusyProvider(null);
+        }
+    };
+
+    const saveNotionPage = async () => {
+        if (!notionPageInput.trim()) return;
+        setSavingNotionPage(true); setMsg(null);
+        try {
+            await apiUpdateNotionSettings(notionPageInput.trim());
+            setMsg({ type: "success", text: "Notion parent page saved — the pipeline database will be created there on next sync." });
+            await load();
+        } catch (e) {
+            setMsg({ type: "error", text: e.message || "Could not save the Notion page." });
+        } finally {
+            setSavingNotionPage(false);
+        }
+    };
+
+    const notion = integrations.find((i) => i.provider === "notion");
+
+    return (
+        <div className="kb-panel">
+            <div className="kb-toggle-btn" style={{ cursor: "default" }}>
+                <span>Integrations</span>
+                <span>Notion &amp; Google</span>
+            </div>
+            <div className="kb-body">
+                <p className="kb-desc">
+                    Connect Notion to mirror your fundraise pipeline, and Google to schedule investor
+                    follow-ups on Calendar and browse Drive files for your data room.
+                </p>
+                {loading ? (
+                    <p className="kb-docs-empty">Loading...</p>
+                ) : (
+                    ["notion", "google"].map((provider) => {
+                        const info = integrations.find((i) => i.provider === provider);
+                        const busy = busyProvider === provider;
+                        return (
+                            <div className="integration-row" key={provider}>
+                                <div className="integration-info">
+                                    <span className={`integration-dot ${info?.connected ? "connected" : ""}`} />
+                                    <div>
+                                        <div className="integration-name">{PROVIDER_LABELS[provider]}</div>
+                                        <div className="integration-sub">
+                                            {!info?.configured
+                                                ? "Not configured on this server"
+                                                : info?.connected
+                                                    ? info.account_label || "Connected"
+                                                    : "Not connected"}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="integration-actions">
+                                    {info?.connected ? (
+                                        <button type="button" className="dash-btn-secondary" disabled={busy}
+                                            onClick={() => handleDisconnect(provider)}>
+                                            {busy ? "..." : "Disconnect"}
+                                        </button>
+                                    ) : (
+                                        <button type="button" className="kb-upload-file-btn" disabled={busy || !info?.configured}
+                                            onClick={() => handleConnect(provider)}>
+                                            <LinkIcon size={13} /> {busy ? "Redirecting..." : "Connect"}
+                                        </button>
+                                    )}
+                                </div>
+                                {provider === "notion" && notion?.connected && (
+                                    <div className="integration-notion-settings">
+                                        <input className="kb-input" style={{ flex: 1, minWidth: 220 }}
+                                            placeholder="Paste a Notion page URL you've shared with Pitchmate"
+                                            value={notionPageInput}
+                                            onChange={(e) => setNotionPageInput(e.target.value)} />
+                                        <button type="button" className="kb-upload-file-btn" disabled={savingNotionPage || !notionPageInput.trim()}
+                                            onClick={saveNotionPage}>
+                                            {savingNotionPage ? "Saving..." : "Save page"}
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })
+                )}
+                {msg && <p className={`kb-msg ${msg.type}`}>{msg.text}</p>}
             </div>
         </div>
     );

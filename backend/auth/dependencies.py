@@ -50,5 +50,6 @@ async def get_current_user(
     return {
         "id": user.id,
         "email": user.email,
+        "team_id": user.team_id,
         "metadata": {"full_name": user.full_name} if user.full_name else {},
     }

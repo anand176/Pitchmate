@@ -175,9 +175,28 @@ PITCHMATE_MODEL=llm-model-name
 # Self-hosted auth (SQLAlchemy + Postgres) — required
 DATABASE_URL=postgresql://pitchmate:pitchmate@localhost:5432/pitchmate
 JWT_SECRET_KEY=replace-with-a-random-secret   # generate: python -c "import secrets; print(secrets.token_urlsafe(32))"
+
+# Notion + Google integrations (Settings → Integrations) — optional, only needed
+# for the "Sync to Notion" / "Schedule follow-up" / Drive actions on the Pipeline tab.
+FRONTEND_URL=http://localhost:5173
+NOTION_CLIENT_ID=
+NOTION_CLIENT_SECRET=
+NOTION_REDIRECT_URI=http://localhost:8000/integrations/notion/callback
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_REDIRECT_URI=http://localhost:8000/integrations/google/callback
+
+# ElevenLabs voice for the Call Practice / Q&A simulator — optional. Without
+# it the simulator still works fully in text; these just add spoken audio for
+# the persona's side of the call.
+ELEVENLABS_API_KEY=
+ELEVENLABS_VOICE_ID=
+ELEVENLABS_MODEL_ID=eleven_turbo_v2_5
 ```
 
 > `SUPABASE_URL`/`SUPABASE_SERVICE_KEY` are only used by the knowledge base (pgvector) — auth no longer depends on Supabase.
+> Notion/Google credentials come from your own OAuth apps — a "public integration" at [notion.so/my-integrations](https://www.notion.so/my-integrations) and an OAuth 2.0 Client ID (Web application) in [Google Cloud Console](https://console.cloud.google.com/apis/credentials) with the Calendar and Drive APIs enabled. Leave them blank to keep those buttons disabled.
+> `ELEVENLABS_API_KEY` comes from [elevenlabs.io](https://elevenlabs.io) → Profile → API keys; `ELEVENLABS_VOICE_ID` is the ID of any voice in your Voice Library (Voices tab → the voice's "..." menu → Copy Voice ID). Leave both blank to keep the simulator text-only.
 
 ```bash
 uvicorn app:app --reload --port 8000

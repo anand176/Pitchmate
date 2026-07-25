@@ -38,6 +38,24 @@ class Config:
         """Return the database URL for ADK session persistence, or None for in-memory."""
         return os.environ.get("DATABASE_URL")
 
+    # ── ElevenLabs (sales call Q&A simulator voice) ──────────────────────────
+    @property
+    def elevenlabs_api_key(self) -> str | None:
+        return os.environ.get("ELEVENLABS_API_KEY") or None
+
+    @property
+    def elevenlabs_voice_id(self) -> str | None:
+        """Default voice for the simulator's persona. Overridable per-request."""
+        return os.environ.get("ELEVENLABS_VOICE_ID") or None
+
+    @property
+    def elevenlabs_model_id(self) -> str:
+        return os.environ.get("ELEVENLABS_MODEL_ID", "eleven_turbo_v2_5")
+
+    @property
+    def voice_simulator_enabled(self) -> bool:
+        return bool(self.elevenlabs_api_key and self.elevenlabs_voice_id)
+
 
 # Singleton config instance
 config = Config()

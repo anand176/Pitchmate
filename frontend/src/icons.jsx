@@ -185,6 +185,89 @@ export const AwardIcon = (props) => (
     </Icon>
 );
 
+export const FunnelIcon = (props) => (
+    <Icon {...props}>
+        <path d="M3.5 4.5h17L14 12.8V19l-4 2v-8.2Z" />
+    </Icon>
+);
+
+export const LinkIcon = (props) => (
+    <Icon {...props}>
+        <path d="M9.5 14.5 14.5 9.5" />
+        <path d="M11 6.5 13 4.5a3.7 3.7 0 0 1 5.2 5.2L16.2 11.7" />
+        <path d="M13 17.5 11 19.5a3.7 3.7 0 0 1-5.2-5.2l2-2" />
+    </Icon>
+);
+
+export const CalendarIcon = (props) => (
+    <Icon {...props}>
+        <rect x="3.5" y="5" width="17" height="16" rx="2" />
+        <path d="M3.5 9.5h17" />
+        <path d="M8 3v4M16 3v4" />
+    </Icon>
+);
+
+export const MapIcon = (props) => (
+    <Icon {...props}>
+        <path d="M9 4.5 3.5 6.5v13L9 17.5l6 2 5.5-2v-13l-5.5 2-6-2Z" />
+        <path d="M9 4.5v13M15 6.5v13" />
+    </Icon>
+);
+
+export const MaximizeIcon = (props) => (
+    <Icon {...props}>
+        <path d="M9 4.5H4.5V9" />
+        <path d="M15 4.5h4.5V9" />
+        <path d="M9 19.5H4.5V15" />
+        <path d="M15 19.5h4.5V15" />
+    </Icon>
+);
+
+export const MinimizeIcon = (props) => (
+    <Icon {...props}>
+        <path d="M4.5 9H9V4.5" />
+        <path d="M19.5 9H15V4.5" />
+        <path d="M4.5 15H9v4.5" />
+        <path d="M19.5 15H15v4.5" />
+    </Icon>
+);
+
+export const ChevronDownIcon = (props) => (
+    <Icon {...props}>
+        <polyline points="6 9 12 15 18 9" />
+    </Icon>
+);
+
+export const MicIcon = (props) => (
+    <Icon {...props}>
+        <rect x="9" y="3" width="6" height="11" rx="3" />
+        <path d="M5.5 11a6.5 6.5 0 0 0 13 0" />
+        <path d="M12 17.5v3M9 20.5h6" />
+    </Icon>
+);
+
+export const VolumeIcon = (props) => (
+    <Icon {...props}>
+        <path d="M4 9.5h3.5L12 5.5v13L7.5 14.5H4Z" />
+        <path d="M15.5 9a4 4 0 0 1 0 6" />
+        <path d="M18 6.5a7.5 7.5 0 0 1 0 11" />
+    </Icon>
+);
+
+export const VolumeOffIcon = (props) => (
+    <Icon {...props}>
+        <path d="M4 9.5h3.5L12 5.5v13L7.5 14.5H4Z" />
+        <line x1="16" y1="9" x2="21" y2="14" />
+        <line x1="21" y1="9" x2="16" y2="14" />
+    </Icon>
+);
+
+export const PhoneIcon = (props) => (
+    <Icon {...props}>
+        <path d="M5.5 4h3l1.5 4-2 1.5a12 12 0 0 0 6.5 6.5l1.5-2 4 1.5v3a1.5 1.5 0 0 1-1.6 1.5A17 17 0 0 1 4 5.6 1.5 1.5 0 0 1 5.5 4Z" />
+    </Icon>
+);
+
 /**
  * Brand mark — an ascending staircase with a rounded ramp tip. Reads as both
  * a traction chart and a launch trajectory. Filled (not stroke), so pass a

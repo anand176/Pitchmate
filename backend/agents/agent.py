@@ -39,10 +39,14 @@ model = create_google_llm(
 
 # Sub-agent metadata. MCP agents are resolved at build time via getters so they
 # pick up lifespan initialization (import-time values are often still None).
+# `label` is the short, human-friendly name shown in the chat's agent picker
+# (see agents/backend.py GET /agents/available) — `name`/`description` stay
+# tool-oriented for the orchestrator's own routing decisions.
 SUB_AGENT_SPECS = [
     {
         "get_agent": lambda: market_validator_agent,
         "name": "market_validator_agent",
+        "label": "Market & GTM Strategist",
         "description": (
             "Validates market sizing (TAM/SAM/SOM) and competitive landscape; suggests go-to-market (GTM) strategy, "
             "ideal customer profiles (ICP), channels, and pricing. Use when the user asks about market size, "
@@ -52,6 +56,7 @@ SUB_AGENT_SPECS = [
     {
         "get_agent": lambda: investor_outreacher_agent,
         "name": "investor_outreacher_agent",
+        "label": "Investor Outreach",
         "description": (
             "Identifies the right investor types for a startup's stage and industry, "
             "and drafts personalized investor outreach emails. "
@@ -61,6 +66,7 @@ SUB_AGENT_SPECS = [
     {
         "get_agent": lambda: knowledge_base_agent,
         "name": "knowledge_base_agent",
+        "label": "Knowledge Base / Deck Review",
         "description": (
             "Answers questions about uploaded documents and reviews pitch decks by searching the vector DB. "
             "Use when the user asks to search docs, review their deck, analyse their pitch deck, "
@@ -70,6 +76,7 @@ SUB_AGENT_SPECS = [
     {
         "get_agent": get_figma_agent,
         "name": "figma_mcp_agent",
+        "label": "Design Feedback (Figma)",
         "description": (
             "Analyses pitch deck visual design using the Figma MCP tool. "
             "Use when the user shares a Figma link or asks for design feedback, "
@@ -79,6 +86,7 @@ SUB_AGENT_SPECS = [
     {
         "get_agent": lambda: web_search_agent,
         "name": "web_search_agent",
+        "label": "Web Research",
         "description": (
             "Web search agent that searches the web and news for market size data, key competitors, "
             "industry trends, and the latest news. Use when the user needs: (1) market size / TAM/SAM/SOM data, "
@@ -89,6 +97,7 @@ SUB_AGENT_SPECS = [
     {
         "get_agent": get_drawio_agent,
         "name": "drawio_agent",
+        "label": "Diagram Creator",
         "description": (
             "Creates and opens diagrams/drawings in the draw.io editor via MCP (returns a View drawing URL). "
             "Use when the user asks for drawings, diagrams, flowcharts, org charts, Mermaid diagrams, "
@@ -98,6 +107,7 @@ SUB_AGENT_SPECS = [
     {
         "get_agent": lambda: pitch_writer_agent,
         "name": "pitch_writer_agent",
+        "label": "Pitch Writer",
         "description": (
             "Takes enriched context and generates: (1) a short elevator pitch (30–60 sec), and "
             "(2) a one-page executive summary as a PDF. Use when the user wants to write their pitch "
@@ -107,6 +117,7 @@ SUB_AGENT_SPECS = [
     {
         "get_agent": lambda: due_diligence_agent,
         "name": "due_diligence_agent",
+        "label": "Due Diligence Prep",
         "description": (
             "Anticipates investor questions, identifies red flags, and generates a due diligence Q&A PDF. "
             "Use when the user asks what questions investors will ask or wants to prepare for meetings."
@@ -115,6 +126,7 @@ SUB_AGENT_SPECS = [
     {
         "get_agent": lambda: deck_creator_agent,
         "name": "deck_creator_agent",
+        "label": "Deck / Report Creator",
         "description": (
             "Creates a pitch deck / product report as a document (PDF or DOCX) with sections: Problem, Solution, "
             "Market Size, Product, Traction, Business Model, GTM Strategy, Competition. "
@@ -124,6 +136,7 @@ SUB_AGENT_SPECS = [
     {
         "get_agent": lambda: valuation_advisor_agent,
         "name": "valuation_advisor_agent",
+        "label": "Valuation Advisor",
         "description": (
             "Estimates a defensible pre-money valuation range using stage baselines, revenue multiple "
             "comps, and team/traction adjustments; gives negotiation guidance. "
@@ -132,6 +145,34 @@ SUB_AGENT_SPECS = [
         ),
     },
 ]
+
+ROOT_AGENT_NAME = AGENT_NAME  # "pitchmate_agent" — alias kept for readability at call sites.
+
+
+def list_available_agents() -> list[dict]:
+    """
+    Agent picker options for the chat UI: the root orchestrator first, then
+    each sub-agent that's actually initialized (MCP-backed ones may be None
+    if their server failed to start — those are simply omitted).
+    """
+    agents = [{
+        "name": ROOT_AGENT_NAME,
+        "label": "Auto (root agent)",
+        "description": "Routes your question to whichever specialist fits best — the default, and best for most questions.",
+    }]
+    for spec in SUB_AGENT_SPECS:
+        if spec["get_agent"]() is None:
+            continue
+        agents.append({"name": spec["name"], "label": spec["label"], "description": spec["description"]})
+    return agents
+
+
+def get_sub_agent_by_name(name: str):
+    """Resolve a specific sub-agent's compiled graph by its `name`, or None if unknown/unavailable."""
+    for spec in SUB_AGENT_SPECS:
+        if spec["name"] == name:
+            return spec["get_agent"]()
+    return None
 
 
 def create_sub_agent_executor(compiled_agent):

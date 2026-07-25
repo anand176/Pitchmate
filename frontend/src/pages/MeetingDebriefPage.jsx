@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { apiDashboardDebrief } from "../pitchmateApi";
-import { RadarIcon, CopyIcon, CheckCircleIcon } from "../icons";
+import { apiDashboardDebrief, apiCreateInvestor } from "../pitchmateApi";
+import { RadarIcon, CopyIcon, CheckCircleIcon, FunnelIcon } from "../icons";
 import { useAnalysisModule, relativeTime } from "../useAnalysisModule";
 
 const INVESTOR_TYPES = ["Angel", "Seed VC", "Series A VC", "Family office", "Corporate VC", "Accelerator"];
@@ -10,6 +10,10 @@ const SIGNAL_LABEL = {
     lukewarm: "Lukewarm — soft pass",
     dead: "Dead — move on",
 };
+
+// Signal read -> pipeline warmth, so a debriefed meeting lands on the Pipeline
+// tab already sorted by how hot the lead actually is.
+const SIGNAL_TO_WARMTH = { warm: "hot", lukewarm: "warm", dead: "cold" };
 
 export default function MeetingDebriefPage() {
     const { profile, saved, loadingSaved, reportRun } = useAnalysisModule("debrief");
@@ -22,6 +26,9 @@ export default function MeetingDebriefPage() {
     const [error, setError] = useState("");
     const [hydrated, setHydrated] = useState(false);
     const [copied, setCopied] = useState(false);
+    const [addingToPipeline, setAddingToPipeline] = useState(false);
+    const [addedToPipeline, setAddedToPipeline] = useState(false);
+    const [pipelineError, setPipelineError] = useState("");
 
     useEffect(() => {
         if (loadingSaved || hydrated) return;
@@ -38,6 +45,7 @@ export default function MeetingDebriefPage() {
         e.preventDefault();
         if (!canSubmit || loading) return;
         setLoading(true); setError(""); setResult(null); setCopied(false);
+        setAddedToPipeline(false); setPipelineError("");
         try {
             const data = await apiDashboardDebrief(form);
             setResult(data);
@@ -60,6 +68,26 @@ export default function MeetingDebriefPage() {
     };
 
     const signal = (result?.signal || "").toLowerCase();
+
+    const handleAddToPipeline = async () => {
+        if (!result || addingToPipeline) return;
+        setAddingToPipeline(true); setPipelineError("");
+        try {
+            await apiCreateInvestor({
+                name: form.investor_name.trim(),
+                investor_type: form.investor_type,
+                pipeline_stage: "pitched",
+                warmth: SIGNAL_TO_WARMTH[signal] || "cold",
+                next_action: result.recommended_next_steps?.[0] || "",
+                notes: result.signal_reasoning || "",
+            });
+            setAddedToPipeline(true);
+        } catch (err) {
+            setPipelineError(err.message || "Could not add to pipeline.");
+        } finally {
+            setAddingToPipeline(false);
+        }
+    };
 
     return (
         <div>
@@ -109,7 +137,16 @@ export default function MeetingDebriefPage() {
                     {result && (
                         <div className="dash-card">
                             {lastRun && <div className="dash-lastrun">Last run · {relativeTime(lastRun)}</div>}
-                            <span className={`dash-signal ${signal}`}>{SIGNAL_LABEL[signal] || result.signal}</span>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+                                <span className={`dash-signal ${signal}`}>{SIGNAL_LABEL[signal] || result.signal}</span>
+                                <button type="button" className="dash-copy-btn" disabled={addingToPipeline || addedToPipeline}
+                                    onClick={handleAddToPipeline}>
+                                    {addedToPipeline
+                                        ? <><CheckCircleIcon size={13} /> Added to pipeline</>
+                                        : <><FunnelIcon size={13} /> {addingToPipeline ? "Adding..." : "Add to pipeline"}</>}
+                                </button>
+                            </div>
+                            {pipelineError && <div className="dash-error">{pipelineError}</div>}
                             {result.signal_reasoning && (
                                 <p style={{ fontSize: 13.5, color: "#0F172A", lineHeight: 1.6, margin: "0 0 6px" }}>{result.signal_reasoning}</p>
                             )}

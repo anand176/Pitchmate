@@ -69,19 +69,29 @@ export async function apiLogout() {
  * Send a query to the Pitchmate agent.
  * @param {string} query - User's message
  * @param {string|null} sessionId - Existing session for multi-turn conversation
+ * @param {string|null} agentName - Talk to one specialist directly instead of the auto-routing root agent
  * @returns {{ response: string, session_id: string }}
  */
-export async function apiPitchmate(query, sessionId = null) {
+export async function apiPitchmate(query, sessionId = null, agentName = null) {
     const headers = await authHeaders();
     const res = await fetch(`${BACKEND}/agents/pitchmate`, {
         method: "POST",
         headers,
-        body: JSON.stringify({ query, session_id: sessionId }),
+        body: JSON.stringify({ query, session_id: sessionId, agent_name: agentName || null }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok)
         throw new Error(data?.detail || `Agent request failed (${res.status})`);
     return data; // { status, response, session_id }
+}
+
+/** Root agent + every specialist sub-agent currently available, for the chat's agent picker. */
+export async function apiGetAvailableAgents() {
+    const headers = await authHeaders();
+    const res = await fetch(`${BACKEND}/agents/available`, { headers });
+    const data = await res.json().catch(() => ([]));
+    if (!res.ok) throw new Error(data?.detail || `Request failed (${res.status})`);
+    return data; // [{ name, label, description }]
 }
 
 /** Health check */
@@ -344,4 +354,259 @@ export async function apiGetAnalyses() {
     return data;
 }
 
+// ─── Fundraise Pipeline (investor CRM) ───────────────────────────────────────
+
+async function _pipelineFetch(path, options = {}) {
+    const headers = await authHeaders();
+    const res = await fetch(`${BACKEND}/pipeline/${path}`, { ...options, headers });
+    if (res.status === 204) return null;
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data?.detail || `Request failed (${res.status})`);
+    return data;
+}
+
+/** Get (or create) the user's active fundraise round + investors + funnel counts. */
+export function apiGetPipelineSummary() {
+    return _pipelineFetch("summary");
+}
+
+/** Update the active fundraise round (name, target/committed amount, stage, status). */
+export function apiUpdateRound(fields) {
+    return _pipelineFetch("round", { method: "PUT", body: JSON.stringify(fields) });
+}
+
+/** Add an investor contact to the pipeline. */
+export function apiCreateInvestor(fields) {
+    return _pipelineFetch("investors", { method: "POST", body: JSON.stringify(fields) });
+}
+
+/** Update an investor contact (e.g. move pipeline_stage, set warmth/next_action). */
+export function apiUpdateInvestor(id, fields) {
+    return _pipelineFetch(`investors/${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(fields) });
+}
+
+/** Remove an investor contact from the pipeline. */
+export function apiDeleteInvestor(id) {
+    return _pipelineFetch(`investors/${encodeURIComponent(id)}`, { method: "DELETE" });
+}
+
+// ─── Integrations (Notion / Google OAuth) ────────────────────────────────────
+
+async function _integrationsFetch(path, options = {}) {
+    const headers = await authHeaders();
+    const res = await fetch(`${BACKEND}/integrations/${path}`, { ...options, headers });
+    if (res.status === 204) return null;
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data?.detail || `Request failed (${res.status})`);
+    return data;
+}
+
+/** Connection status for Notion + Google (configured / connected / account label). */
+export function apiGetIntegrationsStatus() {
+    return _integrationsFetch("status");
+}
+
+/** Get the OAuth authorize URL for a provider ("notion" | "google") — navigate the browser to it. */
+export function apiGetConnectUrl(provider) {
+    return _integrationsFetch(`${provider}/connect`);
+}
+
+/** Disconnect a provider, deleting its stored credential. */
+export function apiDisconnectIntegration(provider) {
+    return _integrationsFetch(provider, { method: "DELETE" });
+}
+
+/** Set the Notion parent page (URL or ID) the pipeline database will be created under. */
+export function apiUpdateNotionSettings(notionParentPageId) {
+    return _integrationsFetch("notion/settings", {
+        method: "PUT",
+        body: JSON.stringify({ notion_parent_page_id: notionParentPageId }),
+    });
+}
+
+/** Push all pipeline investors into the (auto-created) Notion database. @returns { created, updated, database_url } */
+export function apiSyncPipelineToNotion() {
+    return _integrationsFetch("notion/sync-pipeline", { method: "POST" });
+}
+
+/** Create a Google Calendar follow-up event for an investor. @returns { event_id, html_link } */
+export function apiScheduleFollowup({ investor_id, when, duration_minutes = 30, notes }) {
+    return _integrationsFetch("google/schedule-followup", {
+        method: "POST",
+        body: JSON.stringify({ investor_id, when, duration_minutes, notes }),
+    });
+}
+
+/** List recent Google Drive files (e.g. to link a data room / deck). @returns { files: [...] } */
+export function apiListDriveFiles(query = "") {
+    const qs = query ? `?q=${encodeURIComponent(query)}` : "";
+    return _integrationsFetch(`google/drive/files${qs}`);
+}
+
+// ─── Team (lightweight cofounder sharing) ────────────────────────────────────
+
+async function _teamFetch(path, options = {}) {
+    const headers = await authHeaders();
+    const res = await fetch(`${BACKEND}/team/${path}`, { ...options, headers });
+    if (res.status === 204) return null;
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data?.detail || `Request failed (${res.status})`);
+    return data;
+}
+
+/** Everyone sharing your team_id (StartupProfile/pipeline/roadmap/runway are all shared with them). */
+export function apiGetTeamMembers() {
+    return _teamFetch("members");
+}
+
+/** Create a shareable invite link ("invite a cofounder"). @returns { token, invite_url, expires_at } */
+export function apiCreateTeamInvite() {
+    return _teamFetch("invites", { method: "POST" });
+}
+
+/** Preview an invite before accepting (who invited you, how many members already on the team). */
+export function apiPreviewTeamInvite(token) {
+    return _teamFetch(`invites/${encodeURIComponent(token)}`);
+}
+
+/** Accept an invite — switches your workspace to the inviter's team. @returns { joined, team } */
+export function apiAcceptTeamInvite(token) {
+    return _teamFetch("invites/accept", { method: "POST", body: JSON.stringify({ token }) });
+}
+
+// ─── Roadmap (team-shared kanban board) ──────────────────────────────────────
+
+async function _roadmapFetch(path, options = {}) {
+    const headers = await authHeaders();
+    const res = await fetch(`${BACKEND}/roadmap/${path}`, { ...options, headers });
+    if (res.status === 204) return null;
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data?.detail || `Request failed (${res.status})`);
+    return data;
+}
+
+/** Column keys/labels (dynamic quarters) + valid statuses/categories. */
+export function apiGetRoadmapColumns() {
+    return _roadmapFetch("columns");
+}
+
+/** All roadmap cards for the team. */
+export function apiListRoadmapItems() {
+    return _roadmapFetch("items");
+}
+
+/** Create a roadmap card. */
+export function apiCreateRoadmapItem(fields) {
+    return _roadmapFetch("items", { method: "POST", body: JSON.stringify(fields) });
+}
+
+/** AI-suggest roadmap cards from startup context — returns suggestions only, nothing is saved yet. */
+export function apiGenerateRoadmapItems(focus = "", count = 6) {
+    return _roadmapFetch("generate", { method: "POST", body: JSON.stringify({ focus: focus || null, count }) });
+}
+
+/** Edit a roadmap card's title/description/category/status. */
+export function apiUpdateRoadmapItem(id, fields) {
+    return _roadmapFetch(`items/${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(fields) });
+}
+
+/** Drag-and-drop: move a card to a new quarter column + position. */
+export function apiMoveRoadmapItem(id, quarter, position) {
+    return _roadmapFetch(`items/${encodeURIComponent(id)}/move`, {
+        method: "PUT",
+        body: JSON.stringify({ quarter, position }),
+    });
+}
+
+/** Remove a roadmap card. */
+export function apiDeleteRoadmapItem(id) {
+    return _roadmapFetch(`items/${encodeURIComponent(id)}`, { method: "DELETE" });
+}
+
+// ─── Runway (live cash-in-bank tracker) ──────────────────────────────────────
+
+async function _runwayFetch(path, options = {}) {
+    const headers = await authHeaders();
+    const res = await fetch(`${BACKEND}/runway/${path}`, { ...options, headers });
+    if (res.status === 204) return null;
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data?.detail || `Request failed (${res.status})`);
+    return data;
+}
+
+/** Live-computed latest cash, derived monthly burn, and runway (months). */
+export function apiGetRunwaySummary() {
+    return _runwayFetch("summary");
+}
+
+/** Cash-in-bank history, most recent first. */
+export function apiListCashSnapshots() {
+    return _runwayFetch("snapshots");
+}
+
+/** Log a new cash balance reading. */
+export function apiCreateCashSnapshot({ cash_in_bank, recorded_at, note }) {
+    return _runwayFetch("snapshots", { method: "POST", body: JSON.stringify({ cash_in_bank, recorded_at, note }) });
+}
+
+/** Remove a logged cash balance reading. */
+export function apiDeleteCashSnapshot(id) {
+    return _runwayFetch(`snapshots/${encodeURIComponent(id)}`, { method: "DELETE" });
+}
+
+// ─── Simulator (call-practice Q&A roleplay) ──────────────────────────────────
+
+async function _simulatorFetch(path, options = {}) {
+    const headers = await authHeaders();
+    const res = await fetch(`${BACKEND}/simulator/${path}`, { ...options, headers });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data?.detail || `Request failed (${res.status})`);
+    return data;
+}
+
+/** Available personas + whether ElevenLabs voice is configured server-side. */
+export function apiGetSimulatorScenarios() {
+    return _simulatorFetch("scenarios");
+}
+
+/** Start a fresh practice call — returns the persona's opening line. */
+export function apiStartSimulator(scenarioId, customPersona = null) {
+    return _simulatorFetch("start", {
+        method: "POST",
+        body: JSON.stringify({ scenario_id: scenarioId, custom_persona: customPersona || null }),
+    });
+}
+
+/** Submit the founder's answer for scoring + the persona's next line (or call_over + debrief). */
+export function apiSimulatorTurn(scenarioId, transcript, answer, customPersona = null) {
+    return _simulatorFetch("turn", {
+        method: "POST",
+        body: JSON.stringify({ scenario_id: scenarioId, custom_persona: customPersona || null, transcript, answer }),
+    });
+}
+
+/** Past practice sessions for the team (score history). */
+export function apiGetSimulatorHistory() {
+    return _simulatorFetch("history");
+}
+
+/**
+ * Text -> spoken audio (ElevenLabs, proxied server-side) as a playable blob URL.
+ * Caller is responsible for revoking the URL (URL.revokeObjectURL) when done.
+ * Throws if voice isn't configured (503) — callers should catch and fall back to text-only.
+ */
+export async function apiSimulatorSpeak(text) {
+    const headers = await authHeaders();
+    const res = await fetch(`${BACKEND}/simulator/speak`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ text }),
+    });
+    if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.detail || `Voice request failed (${res.status})`);
+    }
+    const blob = await res.blob();
+    return URL.createObjectURL(blob);
+}
 

@@ -24,12 +24,30 @@ router = APIRouter(prefix="/agents", tags=["Agents"])
 class PitchmateRequest(BaseModel):
     query: str
     session_id: Optional[str] = None
+    # Optional: talk to one specialist directly instead of the auto-routing
+    # root agent (see GET /agents/available for valid values). None/omitted/
+    # "pitchmate_agent" all mean "root agent, auto-route".
+    agent_name: Optional[str] = None
 
 
 class PitchmateResponse(BaseModel):
     status: str
     response: str
     session_id: str
+
+
+class AgentOption(BaseModel):
+    name: str
+    label: str
+    description: str
+
+
+@router.get("/available", response_model=list[AgentOption])
+async def list_available_agents(current_user: Annotated[dict, Depends(get_current_user)]):
+    """Root agent + every specialist sub-agent currently available, for the chat's agent picker."""
+    from agents.agent import list_available_agents as _list_agents
+
+    return _list_agents()
 
 
 def _build_enriched_query(query: str, profile_md: str, session_context: str) -> str:
@@ -61,7 +79,7 @@ async def pitchmate(
     try:
         from startup.router import get_profile_for_user, profile_to_markdown
 
-        profile = await get_profile_for_user(db, user_id)
+        profile = await get_profile_for_user(db, current_user["team_id"])
         profile_md = profile_to_markdown(profile)
     except Exception as exc:  # noqa: BLE001 — chat must not fail if profile lookup fails
         logger.warning("Could not load startup profile for chat: %s", exc)
@@ -74,13 +92,37 @@ async def pitchmate(
         logger.info(f"Injected session context ({len(session_context)} chars) for session {req.session_id}")
 
     try:
-        from agents.agent_runner import handle_pitchmate_request
+        requested_agent = (req.agent_name or "").strip()
+        if requested_agent and requested_agent != "pitchmate_agent":
+            # Bypass the orchestrator and talk to one specialist directly —
+            # each sub-agent is itself a compiled LangGraph react agent, so it
+            # can be run the exact same way the orchestrator runs it as a tool.
+            from agents.agent import get_sub_agent_by_name
+            from agents.langgraph_runner import run_agent
+            import uuid as _uuid
 
-        response, actual_session_id = await handle_pitchmate_request(
-            user_id=user_id,
-            query=enriched_query,
-            session_id=req.session_id,
-        )
+            compiled_agent = get_sub_agent_by_name(requested_agent)
+            if compiled_agent is None:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Unknown or unavailable agent: {requested_agent}",
+                )
+            actual_session_id = req.session_id or str(_uuid.uuid4())
+            response = await run_agent(
+                compiled_agent=compiled_agent,
+                user_id=user_id,
+                session_id=actual_session_id,
+                query=enriched_query,
+                agent_name=requested_agent,
+            )
+        else:
+            from agents.agent_runner import handle_pitchmate_request
+
+            response, actual_session_id = await handle_pitchmate_request(
+                user_id=user_id,
+                query=enriched_query,
+                session_id=req.session_id,
+            )
 
         return PitchmateResponse(
             status="success",
@@ -88,6 +130,8 @@ async def pitchmate(
             session_id=actual_session_id,
         )
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Pitchmate agent error: {e}", exc_info=True)
         raise HTTPException(

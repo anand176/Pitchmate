@@ -1,8 +1,13 @@
 import { useState, useRef, useEffect } from "react";
-import { apiPitchmate, apiDownloadArtifact, apiListDocuments } from "../pitchmateApi";
+import { apiPitchmate, apiDownloadArtifact, apiListDocuments, apiGetAvailableAgents } from "../pitchmateApi";
 import { formatMessage } from "../theme";
-import { SendIcon, CloseIcon, SparklesIcon, CheckCircleIcon, LogoMark, FileTextIcon } from "../icons";
+import {
+    SendIcon, CloseIcon, SparklesIcon, CheckCircleIcon, LogoMark, FileTextIcon,
+    MaximizeIcon, MinimizeIcon, ChevronDownIcon,
+} from "../icons";
 import { motion, AnimatePresence, useReducedMotion, SPRING_SOFT, SPRING, EASE } from "../motion";
+
+const ROOT_AGENT = "pitchmate_agent";
 
 const STARTER_PROMPTS = [
     "Tighten my problem & solution into a 60-second pitch",
@@ -40,10 +45,18 @@ export default function ChatPanel({ open, onClose, messages, setMessages, sessio
     const [loading, setLoading] = useState(false);
     const [activeStepIdx, setActiveStepIdx] = useState(-1);
     const [docCount, setDocCount] = useState(null);
+    // Maximize/agent-selection are purely local UI state — ChatPanel stays
+    // mounted the whole session (see file docstring), so these survive close/reopen.
+    const [maximized, setMaximized] = useState(false);
+    const [agents, setAgents] = useState([{ name: ROOT_AGENT, label: "Auto (root agent)", description: "" }]);
+    const [agentName, setAgentName] = useState(ROOT_AGENT);
+    const [agentMenuOpen, setAgentMenuOpen] = useState(false);
     const chatRef = useRef(null);
     const textareaRef = useRef(null);
+    const agentMenuRef = useRef(null);
     const prevMessagesLen = useRef(messages.length);
     const reduceMotion = useReducedMotion();
+    const activeAgent = agents.find((a) => a.name === agentName) || agents[0];
 
     useEffect(() => {
         if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
@@ -51,14 +64,26 @@ export default function ChatPanel({ open, onClose, messages, setMessages, sessio
 
     useEffect(() => {
         if (open && textareaRef.current) textareaRef.current.focus();
-        // Refresh the knowledge-base doc count each time the panel opens so the
-        // "grounded in N documents" line reflects any newly-uploaded files.
+        // Refresh the knowledge-base doc count + available agent list each time
+        // the panel opens (agents can change if an MCP server just finished init).
         if (open) {
             apiListDocuments()
                 .then((d) => setDocCount((d?.documents || []).length))
                 .catch(() => setDocCount(null));
+            apiGetAvailableAgents()
+                .then((list) => { if (Array.isArray(list) && list.length) setAgents(list); })
+                .catch(() => {});
         }
     }, [open]);
+
+    useEffect(() => {
+        if (!agentMenuOpen) return;
+        const onOutside = (e) => {
+            if (agentMenuRef.current && !agentMenuRef.current.contains(e.target)) setAgentMenuOpen(false);
+        };
+        document.addEventListener("mousedown", onOutside);
+        return () => document.removeEventListener("mousedown", onOutside);
+    }, [agentMenuOpen]);
 
     useEffect(() => {
         if (textareaRef.current) {
@@ -83,7 +108,7 @@ export default function ChatPanel({ open, onClose, messages, setMessages, sessio
         }, 1800);
 
         try {
-            const data = await apiPitchmate(query, sessionId);
+            const data = await apiPitchmate(query, sessionId, agentName !== ROOT_AGENT ? agentName : null);
             clearInterval(stepTimer);
             setActiveStepIdx(-1);
             if (data.session_id) setSessionId(data.session_id);
@@ -103,6 +128,19 @@ export default function ChatPanel({ open, onClose, messages, setMessages, sessio
 
     const handleKeyDown = (e) => {
         if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+    };
+
+    const selectAgent = (agent) => {
+        setAgentMenuOpen(false);
+        if (agent.name === agentName) return;
+        setAgentName(agent.name);
+        setMessages((prev) => [...prev, {
+            role: "assistant",
+            isSystem: true,
+            content: agent.name === ROOT_AGENT
+                ? "Switched back to the **root agent** — it'll auto-route to whichever specialist fits your question."
+                : `Now talking directly to **${agent.label}**. It won't hand off to other specialists until you switch back.`,
+        }]);
     };
 
     const onlySystemNudge = messages.length === 1 && messages[0]?.isSystem;
@@ -134,7 +172,7 @@ export default function ChatPanel({ open, onClose, messages, setMessages, sessio
                 onClick={onClose}
             />
             <motion.div
-                className="chat-panel"
+                className={`chat-panel ${maximized ? "maximized" : ""}`}
                 role="dialog"
                 aria-label="Pitchmate chat"
                 initial={false}
@@ -147,17 +185,64 @@ export default function ChatPanel({ open, onClose, messages, setMessages, sessio
                         <LogoMark size={16} />
                     </div>
                     <h3>Ask Pitchmate</h3>
+
+                    <div className="chat-agent-picker" ref={agentMenuRef}>
+                        <button
+                            type="button"
+                            className="chat-agent-btn"
+                            onClick={() => setAgentMenuOpen((v) => !v)}
+                            title="Choose which agent to talk to"
+                            aria-expanded={agentMenuOpen}
+                        >
+                            {activeAgent?.name !== ROOT_AGENT && <SparklesIcon size={12} />}
+                            <span>{activeAgent?.label || "Auto (root agent)"}</span>
+                            <ChevronDownIcon size={13} />
+                        </button>
+                        <AnimatePresence>
+                            {agentMenuOpen && (
+                                <motion.div
+                                    className="chat-agent-menu"
+                                    initial={{ opacity: 0, y: -4 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -4 }}
+                                    transition={{ duration: 0.14 }}
+                                >
+                                    {agents.map((a) => (
+                                        <button
+                                            type="button"
+                                            key={a.name}
+                                            className={`chat-agent-option ${a.name === agentName ? "active" : ""}`}
+                                            onClick={() => selectAgent(a)}
+                                        >
+                                            <span className="chat-agent-option-label">{a.label}</span>
+                                            {a.description && <span className="chat-agent-option-desc">{a.description}</span>}
+                                        </button>
+                                    ))}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+
                     {sessionId && (
                         <span className="dash-tag" style={{ marginLeft: 6 }}>session active</span>
                     )}
                     <button
                         type="button"
                         className="dash-btn-ghost"
-                        style={{ marginLeft: sessionId ? 8 : "auto", padding: "5px 12px", minHeight: 32 }}
+                        style={{ marginLeft: "auto", padding: "5px 12px", minHeight: 32 }}
                         onClick={() => { setMessages([]); setSessionId(null); setInput(""); prevMessagesLen.current = 0; }}
                         title="Start a new chat"
                     >
                         New
+                    </button>
+                    <button
+                        type="button"
+                        className="chat-panel-close"
+                        onClick={() => setMaximized((v) => !v)}
+                        title={maximized ? "Restore" : "Maximize"}
+                        aria-label={maximized ? "Restore chat panel" : "Maximize chat panel"}
+                    >
+                        {maximized ? <MinimizeIcon size={15} /> : <MaximizeIcon size={15} />}
                     </button>
                     <button type="button" className="chat-panel-close" onClick={onClose} title="Close chat" aria-label="Close chat">
                         <CloseIcon size={16} />

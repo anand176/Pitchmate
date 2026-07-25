@@ -90,8 +90,12 @@ export default function MarketPage() {
                     )}
                     {result && (
                         <ResultCard key={resultVersion} animate={resultVersion > 0}>
-                            {lastRun && <div className="dash-lastrun">Last run · {relativeTime(lastRun)}</div>}
-                            <Section as="span" className={`dash-verdict ${result.verdict}`}>{(result.verdict || "").replace("_", " ")}</Section>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap", marginBottom: 14 }}>
+                                {lastRun && <div className="dash-lastrun" style={{ margin: 0 }}>Last run · {relativeTime(lastRun)}</div>}
+                                <Section as="span" className={`dash-verdict ${result.verdict}`} style={{ margin: 0 }}>
+                                    {(result.verdict || "").replace("_", " ")}
+                                </Section>
+                            </div>
 
                             {result.automatic_flags?.length > 0 && (
                                 <>

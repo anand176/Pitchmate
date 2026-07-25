@@ -1,6 +1,8 @@
-import { useEffect, useState } from "react";
-import { apiDashboardFinance } from "../pitchmateApi";
-import { WalletIcon } from "../icons";
+import { useCallback, useEffect, useState } from "react";
+import {
+    apiDashboardFinance, apiGetRunwaySummary, apiCreateCashSnapshot, apiDeleteCashSnapshot,
+} from "../pitchmateApi";
+import { WalletIcon, TrendingUpIcon, CloseIcon } from "../icons";
 import { useAnalysisModule, relativeTime } from "../useAnalysisModule";
 
 const FIELDS = [
@@ -69,6 +71,8 @@ export default function FinancePage() {
                 <h2>Financial Narrative</h2>
                 <p>Turn raw unit economics into the CAC / LTV / burn / runway story investors use to decide — with the numbers computed for you.</p>
             </div>
+
+            <RunwayTracker />
 
             <div className="dash-grid">
                 <form className="dash-card" onSubmit={handleSubmit}>
@@ -173,6 +177,151 @@ export default function FinancePage() {
                     )}
                 </div>
             </div>
+        </div>
+    );
+}
+
+const BURN_SOURCE_LABEL = {
+    trend: "from your logged history",
+    finance_module: "from your Financials form",
+    none: "",
+};
+
+/**
+ * Team-shared "live" runway: logging a cash balance here (as often as you
+ * like) lets /runway/summary derive an actual burn rate from the trend
+ * between entries, instead of relying on a one-shot manually-typed number.
+ * Distinct from the narrative form below — this persists (CashSnapshot) and
+ * updates automatically; the form above is a point-in-time LLM narrative.
+ */
+function RunwayTracker() {
+    const [summary, setSummary] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+    const [form, setForm] = useState({ cash_in_bank: "", note: "" });
+    const [logging, setLogging] = useState(false);
+
+    const load = useCallback(async () => {
+        setLoading(true);
+        try {
+            const data = await apiGetRunwaySummary();
+            setSummary(data);
+        } catch (err) {
+            setError(err.message || "Could not load runway data.");
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => { load(); }, [load]);
+
+    const submitSnapshot = async (e) => {
+        e.preventDefault();
+        if (!form.cash_in_bank.trim() || logging) return;
+        setLogging(true); setError("");
+        try {
+            await apiCreateCashSnapshot({ cash_in_bank: form.cash_in_bank.trim(), note: form.note.trim() || undefined });
+            setForm({ cash_in_bank: "", note: "" });
+            await load();
+        } catch (err) {
+            setError(err.message || "Could not log this balance.");
+        } finally {
+            setLogging(false);
+        }
+    };
+
+    const removeSnapshot = async (id) => {
+        try {
+            await apiDeleteCashSnapshot(id);
+            await load();
+        } catch (err) {
+            setError(err.message || "Could not remove this entry.");
+        }
+    };
+
+    return (
+        <div className="dash-card runway-tracker-card">
+            <h3>Live runway tracker</h3>
+            <p className="kb-desc" style={{ marginTop: -4 }}>
+                Log your cash balance whenever it changes. Once you've logged two or more, runway updates
+                automatically from the trend — no need to re-run the form below every time.
+            </p>
+
+            <div className="runway-tracker-body">
+                <form className="runway-log-form" onSubmit={submitSnapshot}>
+                    <div className="dash-field">
+                        <label>Cash in bank today</label>
+                        <input className="dash-input" placeholder="$720K" value={form.cash_in_bank}
+                            onChange={(e) => setForm((f) => ({ ...f, cash_in_bank: e.target.value }))} />
+                    </div>
+                    <div className="dash-field">
+                        <label>Note <span style={{ opacity: 0.5 }}>(optional)</span></label>
+                        <input className="dash-input" placeholder="e.g. after payroll" value={form.note}
+                            onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))} />
+                    </div>
+                    <button className="dash-btn-primary" type="submit" disabled={!form.cash_in_bank.trim() || logging}>
+                        {logging ? "Logging..." : "Log balance"}
+                    </button>
+                </form>
+
+                <div className="runway-summary-panel">
+                    {loading ? (
+                        <div className="dash-loading"><span className="dash-spinner" /> Loading...</div>
+                    ) : !summary?.has_data ? (
+                        <div className="dash-empty">
+                            <span className="dash-empty-icon"><TrendingUpIcon size={18} /></span>
+                            {summary?.message || "Log your first cash balance to start tracking runway."}
+                        </div>
+                    ) : (
+                        <>
+                            <div className="dash-stat-grid">
+                                <div className="dash-stat-tile">
+                                    <div className="stat-value">{summary.latest_cash_formatted}</div>
+                                    <div className="stat-label">Cash in bank</div>
+                                </div>
+                                <div className="dash-stat-tile">
+                                    <div className="stat-value">{summary.monthly_burn_formatted}</div>
+                                    <div className="stat-label">Monthly burn</div>
+                                </div>
+                                <div className="dash-stat-tile">
+                                    <div className="stat-value">{summary.runway_months != null ? `${summary.runway_months} mo` : "n/a"}</div>
+                                    <div className="stat-label">
+                                        Runway {summary.runway_months != null && (
+                                            <span className={`dash-signal ${runwayClass(summary.runway_months)}`} style={{ margin: 0, padding: "1px 8px", fontSize: 10 }}>
+                                                {summary.runway_months >= 12 ? "comfortable" : summary.runway_months >= 6 ? "tight" : "urgent"}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                            {summary.burn_source !== "none" && (
+                                <p className="kb-desc" style={{ fontSize: 11.5 }}>Burn computed {BURN_SOURCE_LABEL[summary.burn_source]}.</p>
+                            )}
+                            {summary.message && <p className="kb-desc" style={{ fontSize: 11.5 }}>{summary.message}</p>}
+                        </>
+                    )}
+                </div>
+            </div>
+
+            {error && <div className="dash-error">{error}</div>}
+
+            {summary?.trend?.length > 0 && (
+                <>
+                    <div className="dash-section-title">History</div>
+                    <ul className="runway-history-list">
+                        {summary.trend.map((s) => (
+                            <li key={s.id}>
+                                <span className="runway-history-date">{new Date(s.recorded_at).toLocaleDateString()}</span>
+                                <span className="runway-history-amount">{s.cash_in_bank_formatted}</span>
+                                {s.note && <span className="runway-history-note">{s.note}</span>}
+                                <button type="button" className="roadmap-card-close" onClick={() => removeSnapshot(s.id)}>
+                                    <CloseIcon size={11} />
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                </>
+            )}
         </div>
     );
 }
