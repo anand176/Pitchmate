@@ -38,7 +38,6 @@ def create_due_diligence_qa_pdf(
     """
     try:
         from reportlab.lib.pagesizes import letter
-        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
         from reportlab.lib.units import inch
         from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
     except ImportError:
@@ -46,6 +45,8 @@ def create_due_diligence_qa_pdf(
             "PDF creation failed: reportlab is not installed. "
             "Install with: pip install reportlab"
         )
+
+    from core.doc_style import get_pdf_styles, make_page_decorator, escape_pdf_text, cover_flowables, today_str
 
     if not (qa_content or "").strip():
         return "No Q&A content provided. Generate the investor Q&A document first, then call this tool with the full text."
@@ -62,47 +63,30 @@ def create_due_diligence_qa_pdf(
             pagesize=letter,
             leftMargin=0.75 * inch,
             rightMargin=0.75 * inch,
-            topMargin=0.75 * inch,
-            bottomMargin=0.75 * inch,
+            topMargin=0.85 * inch,
+            bottomMargin=0.85 * inch,
         )
-        styles = getSampleStyleSheet()
-        body_style = ParagraphStyle(
-            name="BodySmall",
-            parent=styles["Normal"],
-            fontSize=10,
-            leading=12,
-            spaceAfter=6,
-        )
-        title_style = ParagraphStyle(
-            name="DocTitle",
-            parent=styles["Heading1"],
-            fontSize=14,
-            spaceAfter=12,
-        )
-        heading2_style = ParagraphStyle(
-            name="Heading2",
-            parent=styles["Heading2"],
-            fontSize=12,
-            spaceBefore=10,
-            spaceAfter=6,
-        )
+        styles = get_pdf_styles()
 
-        story = []
-        story.append(Paragraph(f"Due Diligence Q&A — {company_name}".replace("&", "&amp;"), title_style))
-        story.append(Paragraph("Anticipated investor questions and suggested answers", body_style))
-        story.append(Spacer(1, 0.2 * inch))
+        story = cover_flowables(
+            company_name,
+            "Due Diligence Q&A",
+            [today_str(), "Anticipated investor questions and suggested answers"],
+        )
 
         for block in qa_content.strip().split("\n\n"):
             block = block.strip()
             if not block:
                 continue
-            block_escaped = block.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+            block_escaped = escape_pdf_text(block)
             if block.startswith("## ") or block.startswith("### "):
-                story.append(Paragraph(block_escaped.replace("\n", "<br/>"), heading2_style))
+                block_escaped = block_escaped.lstrip("#").strip()
+                story.append(Paragraph(block_escaped.replace("\n", "<br/>"), styles["h2"]))
             else:
-                story.append(Paragraph(block_escaped.replace("\n", "<br/>"), body_style))
+                story.append(Paragraph(block_escaped.replace("\n", "<br/>"), styles["body"]))
 
-        doc.build(story)
+        on_first, on_later = make_page_decorator(company_name, footer_label=f"{company_name} — Due Diligence Q&A")
+        doc.build(story, onFirstPage=on_first, onLaterPages=on_later)
         return f"Due diligence Q&A PDF created. Download: {filename}"
     except Exception as e:
         return f"PDF creation failed: {str(e)}"

@@ -252,9 +252,6 @@ export default function ChatPanel({ open, onClose, messages, setMessages, sessio
                 <div className="chat-messages" ref={chatRef}>
                     {showWelcome && (
                         <div className="chat-welcome">
-                            <div className="chat-welcome-icon">
-                                <SparklesIcon size={20} />
-                            </div>
                             <h4>Refine with your co-pilot</h4>
                             <p>
                                 {profileComplete
@@ -305,16 +302,18 @@ export default function ChatPanel({ open, onClose, messages, setMessages, sessio
                                 <motion.div
                                     key={i}
                                     layout={!reduceMotion}
-                                    className={`chat-message ${msg.role}`}
+                                    className={`chat-message ${msg.role}${msg.isSystem ? " system" : ""}`}
                                     custom={staggerDelay}
                                     initial={reduceMotion || !isNew ? false : "hidden"}
                                     animate="visible"
                                     variants={reduceMotion ? undefined : bubbleVariants}
                                     exit={reduceMotion ? undefined : { opacity: 0 }}
                                 >
-                                    <div className={`chat-avatar ${msg.role === "assistant" ? "ai" : "user-av"}`}>
-                                        {msg.role === "assistant" ? <SparklesIcon size={13} /> : "U"}
-                                    </div>
+                                    {!msg.isSystem && (
+                                        <div className={`chat-avatar ${msg.role === "assistant" ? "ai" : "user-av"}`}>
+                                            {msg.role === "assistant" ? <SparklesIcon size={13} /> : "U"}
+                                        </div>
+                                    )}
                                     <div className="chat-bubble-wrap">
                                         <div
                                             className={`chat-bubble ${msg.role === "assistant" ? "ai" : "user"} ${msg.isError ? "err" : ""} ${msg.isSystem ? "system" : ""}`}

@@ -1903,10 +1903,69 @@ export const DASHBOARD_STYLES = `
     flex-shrink:0; font-family:var(--font-body); font-size:11.5px; color:var(--text-muted);
   }
 
+  .home-quick-grid {
+    display:grid; grid-template-columns:1fr 1fr; gap:10px;
+  }
+  .home-quick-tile {
+    display:flex; flex-direction:column; gap:3px;
+    padding:14px 14px; border:1px solid var(--border); border-radius:var(--radius-sm);
+    background:var(--surface-2); text-decoration:none; color:inherit;
+    transition:border-color 150ms ease, transform 150ms ease, background 150ms ease;
+  }
+  .home-quick-tile:hover {
+    border-color:var(--border-strong); background:var(--hover); transform:translateY(-1px);
+  }
+  .home-quick-label {
+    font-family:var(--font-display); font-size:13.5px; font-weight:600; color:var(--fg);
+  }
+  .home-quick-desc {
+    font-family:var(--font-body); font-size:11.5px; color:var(--text-muted); line-height:1.35;
+  }
+
+  .home-coverage-head {
+    display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:4px;
+  }
+  .home-coverage-head h3 { margin:0; }
+  .home-coverage-count {
+    font-family:var(--font-body); font-size:12px; color:var(--text-muted); white-space:nowrap;
+  }
+  .home-coverage-list { list-style:none; margin:8px 0 0; padding:0; display:flex; flex-direction:column; gap:2px; }
+  .home-coverage-list li {
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:7px 8px; border-radius:var(--radius-sm); transition:background 150ms ease;
+  }
+  .home-coverage-list li:hover { background:var(--hover); }
+  .home-coverage-link {
+    display:flex; align-items:center; gap:8px; min-width:0;
+    text-decoration:none; color:var(--fg);
+    font-family:var(--font-body); font-size:13px;
+  }
+  .home-coverage-mark {
+    width:16px; height:16px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    border-radius:var(--radius-pill); border:1.5px solid var(--border);
+    color:var(--accent-ink);
+  }
+  .home-coverage-list li.done .home-coverage-mark {
+    border-color:rgba(37, 99, 235, 0.35); background:var(--accent-soft);
+  }
+  .home-coverage-badge {
+    flex-shrink:0; font-family:var(--font-body); font-size:10.5px; font-weight:600;
+    padding:2px 8px; border-radius:var(--radius-pill);
+  }
+  .home-coverage-badge.done {
+    background:var(--accent-soft); color:var(--accent-ink); border:1px solid rgba(37, 99, 235, 0.2);
+  }
+  .home-coverage-badge.pending {
+    background:var(--surface-2); color:var(--text-muted); border:1px solid var(--border);
+  }
+
   .chat-bubble.system {
     border-color:rgba(37, 99, 235, 0.25);
     background:var(--accent-soft);
   }
+  .chat-message.system { gap:0; }
+  .chat-message.system .chat-bubble-wrap { max-width:100%; }
 
   /* ── Toasts ──────────────────────────────────────────────────── */
   .dash-toast-stack {

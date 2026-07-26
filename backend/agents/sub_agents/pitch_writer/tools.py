@@ -37,7 +37,6 @@ def create_executive_summary_pdf(
     """
     try:
         from reportlab.lib.pagesizes import letter
-        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
         from reportlab.lib.units import inch
         from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
     except ImportError:
@@ -45,6 +44,8 @@ def create_executive_summary_pdf(
             "PDF creation failed: reportlab is not installed. "
             "Install with: pip install reportlab"
         )
+
+    from core.doc_style import get_pdf_styles, make_page_decorator, escape_pdf_text, cover_flowables, today_str
 
     if not (executive_summary_text or "").strip():
         return "No executive summary text provided. Compose the summary first, then call this tool with the full text."
@@ -61,36 +62,21 @@ def create_executive_summary_pdf(
             pagesize=letter,
             leftMargin=0.75 * inch,
             rightMargin=0.75 * inch,
-            topMargin=0.75 * inch,
-            bottomMargin=0.75 * inch,
+            topMargin=0.85 * inch,
+            bottomMargin=0.85 * inch,
         )
-        styles = getSampleStyleSheet()
-        body_style = ParagraphStyle(
-            name="BodySmall",
-            parent=styles["Normal"],
-            fontSize=10,
-            leading=12,
-            spaceAfter=6,
-        )
-        title_style = ParagraphStyle(
-            name="DocTitle",
-            parent=styles["Heading1"],
-            fontSize=14,
-            spaceAfter=12,
-        )
+        styles = get_pdf_styles()
 
-        story = []
-        story.append(Paragraph(company_name.replace("&", "&amp;"), title_style))
-        story.append(Spacer(1, 0.15 * inch))
+        story = cover_flowables(company_name, "Executive Summary", [today_str()])
 
         for block in executive_summary_text.strip().split("\n\n"):
             block = block.strip()
             if not block:
                 continue
-            block_escaped = block.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-            story.append(Paragraph(block_escaped.replace("\n", "<br/>"), body_style))
+            story.append(Paragraph(escape_pdf_text(block).replace("\n", "<br/>"), styles["body"]))
 
-        doc.build(story)
+        on_first, on_later = make_page_decorator(company_name, footer_label=f"{company_name} — Confidential")
+        doc.build(story, onFirstPage=on_first, onLaterPages=on_later)
         return f"Executive summary PDF created. Download: {filename}"
     except Exception as e:
         return f"PDF creation failed: {str(e)}"

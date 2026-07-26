@@ -7,6 +7,25 @@ import { relativeTime } from "../useAnalysisModule";
 import { motion, AnimatePresence, useReducedMotion, useCountUp, SPRING_SOFT } from "../motion";
 
 const STALE_DAYS = 14;
+const MODULE_COVERAGE = [
+    { key: "market", label: "Market sizing", path: "/market" },
+    { key: "competition", label: "Competition", path: "/competition" },
+    { key: "traction", label: "Traction", path: "/traction" },
+    { key: "gtm", label: "GTM plan", path: "/gtm" },
+    { key: "finance", label: "Financials", path: "/finance" },
+    { key: "valuation", label: "Valuation", path: "/valuation" },
+    { key: "investors", label: "Investor targeting", path: "/investors" },
+    { key: "deck", label: "Pitch deck", path: "/deck" },
+    { key: "debrief", label: "Meeting debrief", path: "/debrief" },
+];
+
+const QUICK_ACTIONS = [
+    { label: "Practice a call", path: "/practice", desc: "Roleplay investor Q&A" },
+    { label: "Track pipeline", path: "/pipeline", desc: "Investor CRM" },
+    { label: "Plan roadmap", path: "/roadmap", desc: "Quarterly board" },
+    { label: "Upload docs", path: "/settings", desc: "Deck & knowledge base" },
+];
+
 const ACTIVITY_LIMIT = 8;
 
 // Module -> activity feed label + destination tab, mirrors MODULE_LABEL in
@@ -120,6 +139,11 @@ export default function HomePage() {
         items.sort((a, b) => new Date(b.at) - new Date(a.at));
         return items.slice(0, ACTIVITY_LIMIT);
     }, [results, investors]);
+
+    const coverageDone = useMemo(
+        () => MODULE_COVERAGE.filter((m) => results[m.key]?.result).length,
+        [results],
+    );
 
     return (
         <div>
@@ -241,6 +265,49 @@ export default function HomePage() {
                                     View pipeline &rarr;
                                 </Link>
                             </>
+                        )}
+                    </div>
+
+                    <div className="dash-card">
+                        <h3>Quick actions</h3>
+                        <div className="home-quick-grid">
+                            {QUICK_ACTIONS.map((action) => (
+                                <Link key={action.path} to={action.path} className="home-quick-tile">
+                                    <span className="home-quick-label">{action.label}</span>
+                                    <span className="home-quick-desc">{action.desc}</span>
+                                </Link>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="dash-card">
+                        <div className="home-coverage-head">
+                            <h3>Analysis coverage</h3>
+                            {!loading && (
+                                <span className="home-coverage-count">{coverageDone}/{MODULE_COVERAGE.length} done</span>
+                            )}
+                        </div>
+                        {loading ? (
+                            <div className="dash-loading"><span className="dash-spinner" /> Loading...</div>
+                        ) : (
+                            <ul className="home-coverage-list">
+                                {MODULE_COVERAGE.map((mod) => {
+                                    const done = !!results[mod.key]?.result;
+                                    return (
+                                        <li key={mod.key} className={done ? "done" : ""}>
+                                            <Link to={mod.path} className="home-coverage-link">
+                                                <span className="home-coverage-mark">
+                                                    {done && <CheckCircleIcon size={11} strokeWidth={2.5} />}
+                                                </span>
+                                                <span>{mod.label}</span>
+                                            </Link>
+                                            <span className={`home-coverage-badge ${done ? "done" : "pending"}`}>
+                                                {done ? "Done" : "Run →"}
+                                            </span>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
                         )}
                     </div>
                 </div>

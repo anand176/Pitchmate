@@ -87,12 +87,17 @@ def create_deck_pdf(content_json: str, company_name: str = "") -> str:
         Message with download filename, e.g. "Deck PDF created. Download: deck_Company_20250228.pdf"
     """
     try:
+        from reportlab.lib import colors
         from reportlab.lib.pagesizes import letter
-        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
         from reportlab.lib.units import inch
-        from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
+        from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, HRFlowable
     except ImportError:
         return "PDF creation failed: reportlab is not installed. Install with: pip install reportlab"
+
+    from core.doc_style import (
+        get_pdf_styles, make_page_decorator, escape_pdf_text, cover_flowables,
+        today_str, ACCENT_HEX,
+    )
 
     company, sections = _parse_content(content_json)
     if not company and company_name:
@@ -115,46 +120,29 @@ def create_deck_pdf(content_json: str, company_name: str = "") -> str:
             pagesize=letter,
             leftMargin=0.75 * inch,
             rightMargin=0.75 * inch,
-            topMargin=0.75 * inch,
-            bottomMargin=0.75 * inch,
+            topMargin=0.85 * inch,
+            bottomMargin=0.85 * inch,
         )
-        styles = getSampleStyleSheet()
-        title_style = ParagraphStyle(
-            name="DocTitle",
-            parent=styles["Heading1"],
-            fontSize=16,
-            spaceAfter=14,
-        )
-        heading_style = ParagraphStyle(
-            name="SectionHead",
-            parent=styles["Heading2"],
-            fontSize=12,
-            spaceBefore=12,
-            spaceAfter=6,
-        )
-        body_style = ParagraphStyle(
-            name="Body",
-            parent=styles["Normal"],
-            fontSize=10,
-            leading=12,
-            spaceAfter=8,
-        )
+        styles = get_pdf_styles()
 
-        story = []
-        story.append(Paragraph(company.replace("&", "&amp;"), title_style))
-        story.append(Paragraph("Pitch deck / product report", body_style))
-        story.append(Spacer(1, 0.2 * inch))
+        story = cover_flowables(
+            company,
+            "Pitch Deck & Product Report",
+            [today_str(), "Prepared for investor review"],
+        )
 
         for key in SECTION_ORDER:
             if key not in sections:
                 continue
             title = SECTION_TITLES.get(key, key.replace("_", " ").title())
-            story.append(Paragraph(title.replace("&", "&amp;"), heading_style))
-            text = sections[key].replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-            story.append(Paragraph(text.replace("\n", "<br/>"), body_style))
-            story.append(Spacer(1, 0.1 * inch))
+            story.append(Paragraph(escape_pdf_text(title), styles["h1"]))
+            story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor(f"#{ACCENT_HEX}"), spaceAfter=8))
+            text = escape_pdf_text(sections[key])
+            story.append(Paragraph(text.replace("\n", "<br/>"), styles["body"]))
+            story.append(Spacer(1, 0.06 * inch))
 
-        doc.build(story)
+        on_first, on_later = make_page_decorator(company, footer_label=f"{company} — Confidential")
+        doc.build(story, onFirstPage=on_first, onLaterPages=on_later)
         return f"Deck PDF created. Download: {filename}"
     except Exception as e:
         return f"PDF creation failed: {str(e)}"
@@ -181,6 +169,8 @@ def create_deck_docx(content_json: str, company_name: str = "") -> str:
     except ImportError:
         return "DOCX creation failed: python-docx is not installed. Install with: pip install python-docx"
 
+    from core.doc_style import style_docx_base, add_cover_block, add_heading_with_rule, add_page_numbers, today_str
+
     company, sections = _parse_content(content_json)
     if not company and company_name:
         company = company_name.strip() or "Product Deck"
@@ -198,19 +188,23 @@ def create_deck_docx(content_json: str, company_name: str = "") -> str:
 
     try:
         doc = Document()
-        doc.add_heading(company, 0)
-        doc.add_paragraph("Pitch deck / product report")
-        doc.add_paragraph()
+        style_docx_base(doc)
+        add_cover_block(
+            doc,
+            company,
+            "Pitch Deck & Product Report",
+            [today_str(), "Prepared for investor review"],
+        )
+        add_page_numbers(doc)
 
         for key in SECTION_ORDER:
             if key not in sections:
                 continue
             title = SECTION_TITLES.get(key, key.replace("_", " ").title())
-            doc.add_heading(title, level=1)
+            add_heading_with_rule(doc, title, level=1)
             for para in sections[key].strip().split("\n\n"):
                 if para.strip():
                     doc.add_paragraph(para.strip())
-            doc.add_paragraph()
 
         doc.save(filepath)
         return f"Deck DOCX created. Download: {filename}"
