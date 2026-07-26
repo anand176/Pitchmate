@@ -1,7 +1,7 @@
 """
 Knowledge Base router — upload text/documents and list stored sources.
 Endpoints:
-  POST /knowledge-base/upload      — embed + store text chunks in Supabase pgvector
+  POST /knowledge-base/upload      — embed + store text chunks in Pinecone
   POST /knowledge-base/upload-file — upload PDF or DOCX file, extract text, then store
   GET  /knowledge-base/documents   — list all uploaded document sources
 """
@@ -43,8 +43,7 @@ async def upload_document(
     current_user: Annotated[dict, Depends(get_current_user)],
 ):
     """
-    Chunk a text document, embed it with text-embedding-004,
-    and upsert into the Supabase pgvector documents table.
+    Chunk a text document, embed it locally, and upsert into Pinecone.
     """
     if not req.text.strip():
         raise HTTPException(status_code=400, detail="text body is empty.")
@@ -63,7 +62,7 @@ async def upload_document(
             },
             tags={"operation": "upload"},
         ):
-            from agents.sub_agents.knowledge_base.supabase_vector_store import upsert_document_chunks
+            from agents.sub_agents.knowledge_base.pinecone_vector_store import upsert_document_chunks
             stored = upsert_document_chunks(
                 [{"text": c} for c in chunks],
                 source_name=req.source_name,
@@ -127,7 +126,7 @@ async def upload_file(
             },
             tags={"operation": "upload_file"},
         ):
-            from agents.sub_agents.knowledge_base.supabase_vector_store import upsert_document_chunks
+            from agents.sub_agents.knowledge_base.pinecone_vector_store import upsert_document_chunks
             stored = upsert_document_chunks(
                 [{"text": c} for c in chunks],
                 source_name=source_name,
@@ -152,7 +151,7 @@ async def list_documents(
 ):
     """List all document sources stored in the knowledge base."""
     try:
-        from agents.sub_agents.knowledge_base.supabase_vector_store import list_all_sources
+        from agents.sub_agents.knowledge_base.pinecone_vector_store import list_all_sources
         sources = list_all_sources()
         return DocumentsResponse(documents=sources)
     except Exception as exc:
