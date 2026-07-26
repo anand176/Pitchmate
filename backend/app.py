@@ -14,8 +14,8 @@ from fastapi.middleware.cors import CORSMiddleware
 async def lifespan(app: FastAPI):
     """Application lifespan — startup and shutdown hooks."""
     # Startup
-    from core.supabase_client import get_supabase_client
-    get_supabase_client()  # initialise singleton on startup (still used by the knowledge base)
+    from agents.sub_agents.knowledge_base.pinecone_vector_store import init_pinecone
+    init_pinecone()  # initialise Pinecone index singleton on startup (knowledge base)
 
     # Ensure the self-hosted auth database (users table) exists.
     from db.base import init_db

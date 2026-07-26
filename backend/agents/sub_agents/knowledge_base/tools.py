@@ -1,6 +1,5 @@
 """
-Knowledge Base tools — search and list documents via Supabase pgvector.
-Replaces the previous Pinecone implementation.
+Knowledge Base tools — search and list documents via Pinecone.
 """
 
 import logging
@@ -9,18 +8,18 @@ logger = logging.getLogger("knowledge_base_agent")
 
 
 def _query_vectors(query_text: str, top_k: int) -> list[dict]:
-    from agents.sub_agents.knowledge_base.supabase_vector_store import query_vectors
+    from agents.sub_agents.knowledge_base.pinecone_vector_store import query_vectors
     return query_vectors(query_text, top_k=top_k)
 
 
 def _list_sources() -> list[dict]:
-    from agents.sub_agents.knowledge_base.supabase_vector_store import list_all_sources
+    from agents.sub_agents.knowledge_base.pinecone_vector_store import list_all_sources
     return list_all_sources()
 
 
 def search_knowledge_base(query: str, top_k: int = 6) -> str:
     """
-    Search the Supabase pgvector knowledge base for passages relevant to the query.
+    Search the Pinecone knowledge base for passages relevant to the query.
     Use this to answer questions about uploaded pitch-related documents, frameworks, or research.
 
     Args:
@@ -42,8 +41,8 @@ def search_knowledge_base(query: str, top_k: int = 6) -> str:
                     log_metric("kb_top_score", max(scores))
     except RuntimeError as e:
         return (
-            "Knowledge base (Supabase pgvector) is not available. "
-            "Please ensure SUPABASE_URL and SUPABASE_SERVICE_KEY are set and the documents table exists."
+            "Knowledge base (Pinecone) is not available. "
+            "Please ensure PINECONE_API_KEY and PINECONE_INDEX are set."
         )
     except Exception as e:
         logger.exception("Knowledge base search failed")
@@ -69,7 +68,7 @@ def search_knowledge_base(query: str, top_k: int = 6) -> str:
 
 def list_uploaded_documents() -> str:
     """
-    List all documents currently stored in the Supabase knowledge base.
+    List all documents currently stored in the Pinecone knowledge base.
     Call this when the user asks what documents are available or what they can ask about.
     """
     try:
