@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { apiDashboardDeck, apiDashboardDeckExport, apiDownloadArtifact } from "../pitchmateApi";
 import { FileTextIcon, SparklesIcon } from "../icons";
 import { useAnalysisModule, relativeTime } from "../useAnalysisModule";
-import { ResultCard, Section, MotionButton } from "../motion";
+import { ResultCard, Section, MotionButton, ResultActions } from "../motion";
 
 const SECTION_FIELDS = [
     { key: "problem", label: "Problem" },
@@ -45,7 +45,7 @@ function deriveSectionsFrom(profile, allResults) {
 }
 
 export default function DeckPage() {
-    const { profile, saved, allResults, loadingSaved, reportRun } = useAnalysisModule("deck");
+    const { profile, saved, allResults, loadingSaved, reportRun, clearAnalysis, storeToKnowledgeBase } = useAnalysisModule("deck");
     const [companyName, setCompanyName] = useState("");
     const [sections, setSections] = useState({});
     const [result, setResult] = useState(null);
@@ -76,6 +76,12 @@ export default function DeckPage() {
 
     const updateSection = (key, value) => setSections((s) => ({ ...s, [key]: value }));
     const canSubmit = companyName.trim();
+
+    const handleClear = async () => {
+        await clearAnalysis();
+        setResult(null);
+        setLastRun(null);
+    };
 
     const pullFromData = () => {
         const derived = deriveSectionsFrom(profile, allResults);
@@ -180,6 +186,7 @@ export default function DeckPage() {
                                     <p style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6 }}>{s.content}</p>
                                 </Section>
                             ))}
+                            <ResultActions onClear={handleClear} onStore={() => storeToKnowledgeBase(result)} />
                         </ResultCard>
                     )}
                 </div>

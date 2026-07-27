@@ -104,6 +104,59 @@ export function MotionButton({ className = "dash-btn-primary", disabled, childre
     );
 }
 
+/**
+ * "Clear" / "Store" pair shown on every dashboard result card. Clear deletes
+ * the saved analysis for that module (asks for confirmation first, since it's
+ * destructive); Store pushes the result into the Knowledge Base. Both
+ * `onClear`/`onStore` are async functions supplied by the page — this
+ * component only owns the button loading/error UI, not the actual logic.
+ */
+export function ResultActions({ onClear, onStore, className = "dash-result-actions" }) {
+    const [clearing, setClearing] = useState(false);
+    const [storing, setStoring] = useState(false);
+    const [error, setError] = useState("");
+    const [stored, setStored] = useState(false);
+
+    const handleClear = async () => {
+        if (clearing) return;
+        if (!window.confirm("Clear this result? This also deletes the saved analysis for this module.")) return;
+        setClearing(true); setError("");
+        try {
+            await onClear();
+        } catch (e) {
+            setError(e.message || "Clear failed.");
+        } finally {
+            setClearing(false);
+        }
+    };
+
+    const handleStore = async () => {
+        if (storing) return;
+        setStoring(true); setError(""); setStored(false);
+        try {
+            await onStore();
+            setStored(true);
+            setTimeout(() => setStored(false), 2500);
+        } catch (e) {
+            setError(e.message || "Store failed.");
+        } finally {
+            setStoring(false);
+        }
+    };
+
+    return (
+        <div className={className} style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <button type="button" className="dash-btn-ghost dash-btn-sm" onClick={handleStore} disabled={storing}>
+                {storing ? "Storing..." : stored ? "Stored ✓" : "Store in Knowledge Base"}
+            </button>
+            <button type="button" className="dash-btn-ghost dash-btn-sm" onClick={handleClear} disabled={clearing}>
+                {clearing ? "Clearing..." : "Clear"}
+            </button>
+            {error && <span className="dash-error" style={{ margin: 0 }}>{error}</span>}
+        </div>
+    );
+}
+
 /** Springs a displayed integer toward `target`, counting up/down as it goes. */
 export function useCountUp(target, { reduce } = {}) {
     const [display, setDisplay] = useState(target);

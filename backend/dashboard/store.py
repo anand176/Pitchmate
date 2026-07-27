@@ -49,6 +49,21 @@ async def save_analysis(
     return row
 
 
+async def delete_analysis(db: AsyncSession, user_id: str, module: str) -> bool:
+    """Delete the saved result for (user, module). Returns True if a row was removed."""
+    row = await db.scalar(
+        select(AnalysisResult).where(
+            AnalysisResult.user_id == user_id,
+            AnalysisResult.module == module,
+        )
+    )
+    if row is None:
+        return False
+    await db.delete(row)
+    await db.commit()
+    return True
+
+
 async def get_analyses(db: AsyncSession, user_id: str) -> list[AnalysisResult]:
     """All saved analyses for a user, newest first."""
     rows = await db.scalars(

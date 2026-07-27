@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { apiDashboardValuation } from "../pitchmateApi";
 import { CoinsIcon } from "../icons";
 import { useAnalysisModule, relativeTime } from "../useAnalysisModule";
-import { ResultCard, Section, MotionButton } from "../motion";
+import { ResultCard, Section, MotionButton, ResultActions } from "../motion";
 
 const STAGES = ["Pre-Seed", "Seed", "Series A", "Series B+"];
 
@@ -14,7 +14,7 @@ const STAGE_FROM_LIFECYCLE = {
 };
 
 export default function ValuationPage() {
-    const { profile, saved, loadingSaved, reportRun } = useAnalysisModule("valuation");
+    const { profile, saved, loadingSaved, reportRun, clearAnalysis, storeToKnowledgeBase } = useAnalysisModule("valuation");
     const [form, setForm] = useState({
         stage: "Seed", sector: "", arr: "", growth_rate_yoy: "",
         team_strength: 3, traction_strength: 3,
@@ -40,6 +40,12 @@ export default function ValuationPage() {
 
     const update = (k, v) => setForm((f) => ({ ...f, [k]: v }));
     const canSubmit = form.sector.trim();
+
+    const handleClear = async () => {
+        await clearAnalysis();
+        setResult(null);
+        setLastRun(null);
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -146,6 +152,7 @@ export default function ValuationPage() {
                                     {result.caveat}
                                 </Section>
                             )}
+                            <ResultActions onClear={handleClear} onStore={() => storeToKnowledgeBase(result)} />
                         </ResultCard>
                     )}
                 </div>

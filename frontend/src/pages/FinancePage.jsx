@@ -4,6 +4,7 @@ import {
 } from "../pitchmateApi";
 import { WalletIcon, TrendingUpIcon, CloseIcon } from "../icons";
 import { useAnalysisModule, relativeTime } from "../useAnalysisModule";
+import { ResultActions } from "../motion";
 
 const FIELDS = [
     { key: "revenue", label: "Revenue (MRR/ARR)", placeholder: "$40K MRR — or 'pre-revenue'" },
@@ -29,7 +30,7 @@ function runwayClass(months) {
 }
 
 export default function FinancePage() {
-    const { saved, loadingSaved, reportRun } = useAnalysisModule("finance");
+    const { saved, loadingSaved, reportRun, clearAnalysis, storeToKnowledgeBase } = useAnalysisModule("finance");
     const [form, setForm] = useState({
         revenue: "", cac: "", ltv: "", monthly_burn: "", cash_in_bank: "", gross_margin: "", context: "",
     });
@@ -48,6 +49,12 @@ export default function FinancePage() {
 
     const update = (k, v) => setForm((f) => ({ ...f, [k]: v }));
     const canSubmit = form.cac.trim() || form.ltv.trim() || form.monthly_burn.trim() || form.revenue.trim();
+
+    const handleClear = async () => {
+        await clearAnalysis();
+        setResult(null);
+        setLastRun(null);
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -173,6 +180,7 @@ export default function FinancePage() {
                                     <p style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6 }}>{result.benchmark_notes}</p>
                                 </>
                             )}
+                            <ResultActions onClear={handleClear} onStore={() => storeToKnowledgeBase(result)} />
                         </div>
                     )}
                 </div>

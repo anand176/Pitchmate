@@ -220,6 +220,23 @@ export const DASHBOARD_STYLES = `
     border-color:var(--border-strong);
     color:var(--accent-ink);
   }
+  .dash-btn-ghost:disabled { opacity:.5; cursor:not-allowed; }
+  .dash-btn-ghost.dash-btn-sm {
+    min-height:30px;
+    padding:5px 12px;
+    font-size:12px;
+  }
+
+  .dash-result-actions {
+    margin:14px 0 2px;
+    padding-top:12px;
+    border-top:1px solid var(--border);
+  }
+  .dash-result-actions .dash-error {
+    margin-top:0;
+    padding:5px 10px;
+    font-size:11.5px;
+  }
 
   .dash-body {
     display:flex;

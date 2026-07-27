@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { apiDashboardInvestors } from "../pitchmateApi";
 import { HandshakeIcon } from "../icons";
 import { useAnalysisModule, relativeTime } from "../useAnalysisModule";
-import { ResultCard, Section, MotionButton } from "../motion";
+import { ResultCard, Section, MotionButton, ResultActions } from "../motion";
 
 const STAGES = ["Pre-Seed", "Seed", "Series A", "Series B+"];
 
@@ -13,7 +13,7 @@ const STAGE_FROM_LIFECYCLE = {
 };
 
 export default function InvestorsPage() {
-    const { profile, saved, loadingSaved, reportRun } = useAnalysisModule("investors");
+    const { profile, saved, loadingSaved, reportRun, clearAnalysis, storeToKnowledgeBase } = useAnalysisModule("investors");
     const [stage, setStage] = useState("Seed");
     const [industry, setIndustry] = useState("");
     const [result, setResult] = useState(null);
@@ -36,6 +36,12 @@ export default function InvestorsPage() {
     }, [loadingSaved, saved, profile, hydrated]);
 
     const canSubmit = industry.trim();
+
+    const handleClear = async () => {
+        await clearAnalysis();
+        setResult(null);
+        setLastRun(null);
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -132,6 +138,7 @@ export default function InvestorsPage() {
                                     <Section className="dash-list">{result.red_flags.map((s, i) => <div key={i} className="dash-list-item"><span className="bullet">•</span>{s}</div>)}</Section>
                                 </>
                             )}
+                            <ResultActions onClear={handleClear} onStore={() => storeToKnowledgeBase(result)} />
                         </ResultCard>
                     )}
                 </div>

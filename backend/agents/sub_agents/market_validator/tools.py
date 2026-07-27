@@ -131,11 +131,10 @@ def suggest_gtm_strategy(product_description: str, target_market: str) -> str:
     """
     desc_lower = (product_description + " " + target_market).lower()
     market_type = "b2b_saas"
-    if any(w in desc_lower for w in ["consumer", "b2c", "app", "personal"]):
-        market_type = "b2c"
-    elif "enterprise" in desc_lower:
-        market_type = "enterprise"
-    elif "marketplace" in desc_lower:
+    # Check specific verticals before the generic b2c/enterprise fallback, so a
+    # B2B fintech/healthtech tool isn't misclassified just for sharing a word
+    # with a broader category (e.g. a Shopify reconciliation "app" is not b2c).
+    if "marketplace" in desc_lower:
         market_type = "marketplace"
     elif "fintech" in desc_lower or "finance" in desc_lower or "payment" in desc_lower:
         market_type = "fintech"
@@ -145,6 +144,16 @@ def suggest_gtm_strategy(product_description: str, target_market: str) -> str:
         market_type = "edtech"
     elif "hardware" in desc_lower or "device" in desc_lower or "iot" in desc_lower:
         market_type = "consumer_hardware"
+    elif "enterprise" in desc_lower:
+        market_type = "enterprise"
+    elif any(
+        p in desc_lower
+        for p in ["b2c", "d2c", "direct-to-consumer", "direct to consumer", "consumer app", "personal use"]
+    ):
+        # Deliberately NOT matching bare "app" or "personal" — both are too
+        # generic (e.g. "Shopify app", "personalized") and were causing
+        # clearly-B2B products to be misclassified as consumer.
+        market_type = "b2c"
 
     suggested_channels = CHANNEL_MAP.get(market_type, CHANNEL_MAP["b2b_saas"])
     suggested_pricing = PRICING_MODELS.get(

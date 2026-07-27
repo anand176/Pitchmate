@@ -413,7 +413,6 @@ function ShareDocPanel() {
                                 <div className="kb-doc-list">
                                     {docs.map((d) => (
                                         <div key={d.file_name} className="kb-doc-item">
-                                            <span className="kb-doc-icon">DOC</span>
                                             <span className="kb-doc-name">{d.file_name}</span>
                                             <span className="kb-doc-count">{d.count} chunks</span>
                                         </div>

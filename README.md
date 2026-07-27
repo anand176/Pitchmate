@@ -29,13 +29,13 @@ backend/
   auth/            ← Self-hosted auth (JWT signup/login) against the users table
   db/              ← SQLAlchemy engine/session + User model (Postgres)
   agents/          ← Pitchmate orchestrator + sub-agents (LangGraph)
-  knowledge_base/  ← pgvector upload + retrieval (Supabase)
-  core/            ← Supabase client (knowledge base only), security (hashing/JWT), config
+  knowledge_base/  ← Pinecone upload + retrieval
+  core/            ← security (hashing/JWT), config
 ```
 
-**Stack:** FastAPI · LangChain-LangGraph (Gemini 2.5 Flash) · Postgres (self-hosted auth + chat session persistence) · Supabase pgvector (knowledge base) · React · Vite
+**Stack:** FastAPI · LangChain-LangGraph (Gemini 2.5 Flash) · Postgres (self-hosted auth + chat session persistence) · Pinecone (knowledge base) · React · Vite
 
-> **🔐 Auth Note:** Signup/login/logout are self-hosted (SQLAlchemy + Postgres + JWT) — no external auth provider. Supabase is still used, but only for the pgvector-backed knowledge base.
+> **🔐 Auth Note:** Signup/login/logout are fully self-hosted (SQLAlchemy + Postgres + JWT) — no external auth or database provider. Pinecone is used only for the knowledge base's vector search.
 
 > **📢 Migration Note:** This project has been migrated from Google ADK to LangChain-LangGraph (June 2026). See:
 > - `backend/MIGRATION_SUMMARY.md` - Quick overview
@@ -167,8 +167,8 @@ You'll also need a local Postgres database for user accounts (and, optionally, p
 
 Create `backend/.env`:
 ```env
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_SERVICE_KEY=your-service-role-key
+PINECONE_API_KEY=your-pinecone-api-key
+PINECONE_INDEX=pitchmate
 GEMINI_API_KEY=your-gemini-api-key
 PITCHMATE_MODEL=llm-model-name
 
@@ -194,7 +194,7 @@ ELEVENLABS_VOICE_ID=
 ELEVENLABS_MODEL_ID=eleven_turbo_v2_5
 ```
 
-> `SUPABASE_URL`/`SUPABASE_SERVICE_KEY` are only used by the knowledge base (pgvector) — auth no longer depends on Supabase.
+> `PINECONE_API_KEY`/`PINECONE_INDEX` are only used by the knowledge base. If the index doesn't exist yet, the backend auto-creates a serverless one (dimension 384, cosine) on startup.
 > Notion/Google credentials come from your own OAuth apps — a "public integration" at [notion.so/my-integrations](https://www.notion.so/my-integrations) and an OAuth 2.0 Client ID (Web application) in [Google Cloud Console](https://console.cloud.google.com/apis/credentials) with the Calendar and Drive APIs enabled. Leave them blank to keep those buttons disabled.
 > `ELEVENLABS_API_KEY` comes from [elevenlabs.io](https://elevenlabs.io) → Profile → API keys; `ELEVENLABS_VOICE_ID` is the ID of any voice in your Voice Library (Voices tab → the voice's "..." menu → Copy Voice ID). Leave both blank to keep the simulator text-only.
 

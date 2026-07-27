@@ -30,7 +30,7 @@ from agents.langgraph_base import create_google_llm
 from core.config import config
 from core.mlflow_tracking import MLflowCallbackHandler, log_metric, log_params, track_run
 from db.base import get_db_session
-from dashboard.store import get_analyses, save_analysis
+from dashboard.store import ANALYSIS_MODULES, delete_analysis, get_analyses, save_analysis
 from dashboard.schemas import (
     CompetitionRequest,
     CompetitionResult,
@@ -427,3 +427,16 @@ async def list_saved_analyses(
         results=results,
         completed_modules=sorted(results.keys()),
     )
+
+
+@router.delete("/results/{module}")
+async def delete_saved_analysis(
+    module: str,
+    current_user: Annotated[dict, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+):
+    """Delete the current user's saved result for one module (the "Clear" action on a dashboard tab)."""
+    if module not in ANALYSIS_MODULES:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Unknown module: {module}")
+    deleted = await delete_analysis(db, current_user["id"], module)
+    return {"status": "deleted" if deleted else "not_found", "module": module}

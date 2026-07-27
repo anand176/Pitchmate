@@ -2,10 +2,25 @@ import { useEffect, useState } from "react";
 import { apiDashboardGTM } from "../pitchmateApi";
 import { TargetIcon } from "../icons";
 import { useAnalysisModule, relativeTime } from "../useAnalysisModule";
-import { ResultCard, Section, MotionButton } from "../motion";
+import { ResultCard, Section, MotionButton, ResultActions } from "../motion";
+
+const MARKET_TYPE_LABELS = {
+    b2b_saas: "B2B SaaS",
+    b2c: "B2C",
+    enterprise: "Enterprise",
+    marketplace: "Marketplace",
+    fintech: "Fintech",
+    healthtech: "Healthtech",
+    edtech: "Edtech",
+    consumer_hardware: "Consumer Hardware",
+};
+
+function formatMarketType(type) {
+    return MARKET_TYPE_LABELS[type] || (type || "").replace(/_/g, " ");
+}
 
 export default function GTMPage() {
-    const { profile, saved, loadingSaved, reportRun } = useAnalysisModule("gtm");
+    const { profile, saved, loadingSaved, reportRun, clearAnalysis, storeToKnowledgeBase } = useAnalysisModule("gtm");
     const [form, setForm] = useState({ product_description: "", target_market: "" });
     const [result, setResult] = useState(null);
     const [resultVersion, setResultVersion] = useState(0);
@@ -26,6 +41,12 @@ export default function GTMPage() {
 
     const update = (k, v) => setForm((f) => ({ ...f, [k]: v }));
     const canSubmit = form.product_description.trim() && form.target_market.trim();
+
+    const handleClear = async () => {
+        await clearAnalysis();
+        setResult(null);
+        setLastRun(null);
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -81,7 +102,7 @@ export default function GTMPage() {
                     {result && (
                         <ResultCard key={resultVersion} animate={resultVersion > 0}>
                             {lastRun && <div className="dash-lastrun">Last run · {relativeTime(lastRun)}</div>}
-                            <Section as="span" className="dash-tag">{result.inferred_market_type}</Section>
+                            <Section as="span" className="dash-tag">{formatMarketType(result.inferred_market_type)}</Section>
 
                             <Section className="dash-section-title">Suggested Channels</Section>
                             <Section>{result.suggested_channels?.map((c, i) => <span key={i} className="dash-tag">{c}</span>)}</Section>
@@ -122,6 +143,7 @@ export default function GTMPage() {
                                     <Section as="p" style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6 }}>{result.recommended_sales_motion}</Section>
                                 </>
                             )}
+                            <ResultActions onClear={handleClear} onStore={() => storeToKnowledgeBase(result)} />
                         </ResultCard>
                     )}
                 </div>

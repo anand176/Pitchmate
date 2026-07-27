@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { apiDashboardMarket } from "../pitchmateApi";
 import { TrendingUpIcon } from "../icons";
 import { useAnalysisModule, relativeTime } from "../useAnalysisModule";
-import { ResultCard, Section, MotionButton } from "../motion";
+import { ResultCard, Section, MotionButton, ResultActions } from "../motion";
 
 export default function MarketPage() {
-    const { profile, saved, loadingSaved, reportRun } = useAnalysisModule("market");
+    const { profile, saved, loadingSaved, reportRun, clearAnalysis, storeToKnowledgeBase } = useAnalysisModule("market");
     const [form, setForm] = useState({ tam: "", sam: "", som: "", description: "" });
     const [result, setResult] = useState(null);
     const [resultVersion, setResultVersion] = useState(0);
@@ -27,6 +27,12 @@ export default function MarketPage() {
     const update = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
     const canSubmit = form.tam.trim() && form.sam.trim() && form.som.trim() && form.description.trim();
+
+    const handleClear = async () => {
+        await clearAnalysis();
+        setResult(null);
+        setLastRun(null);
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -129,6 +135,7 @@ export default function MarketPage() {
                                     <Section className="dash-list">{result.recommendations.map((s, i) => <div key={i} className="dash-list-item"><span className="bullet">•</span>{s}</div>)}</Section>
                                 </>
                             )}
+                            <ResultActions onClear={handleClear} onStore={() => storeToKnowledgeBase(result)} />
                         </ResultCard>
                     )}
                 </div>

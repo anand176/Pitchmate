@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { apiGetAnalyses } from "./pitchmateApi";
+import { apiDeleteAnalysis, apiGetAnalyses, apiUploadDocument } from "./pitchmateApi";
 import { useDashboardContext } from "./dashboardContext";
 
 /**
@@ -44,6 +44,45 @@ export function relativeTime(iso) {
     return new Date(iso).toLocaleDateString();
 }
 
+/**
+ * Turn an arbitrary dashboard result object into readable text suitable for
+ * storing as a Knowledge Base document. Generic on purpose — every module
+ * (market, gtm, competition, traction, finance, valuation, investors, deck,
+ * debrief) has a different result shape, so this walks whatever it's given
+ * instead of needing a per-module formatter.
+ */
+export function formatResultAsText(title, result, depth = 0) {
+    const indent = "  ".repeat(depth);
+    const lines = depth === 0 ? [`# ${title}`, ""] : [];
+
+    const titleCase = (key) =>
+        key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
+    for (const [key, value] of Object.entries(result || {})) {
+        if (value === null || value === undefined || value === "") continue;
+        if (Array.isArray(value)) {
+            if (value.length === 0) continue;
+            lines.push(`${indent}${titleCase(key)}:`);
+            for (const item of value) {
+                if (item && typeof item === "object") {
+                    const parts = Object.entries(item)
+                        .filter(([, v]) => v !== null && v !== undefined && v !== "")
+                        .map(([k, v]) => `${titleCase(k)}: ${v}`);
+                    lines.push(`${indent}  - ${parts.join(" | ")}`);
+                } else {
+                    lines.push(`${indent}  - ${item}`);
+                }
+            }
+        } else if (typeof value === "object") {
+            lines.push(`${indent}${titleCase(key)}:`);
+            lines.push(formatResultAsText(title, value, depth + 1));
+        } else {
+            lines.push(`${indent}${titleCase(key)}: ${value}`);
+        }
+    }
+    return lines.join("\n");
+}
+
 export function useAnalysisModule(module) {
     const ctx = useDashboardContext();
     const { profile, refreshProfile, notify } = ctx;
@@ -83,5 +122,28 @@ export function useAnalysisModule(module) {
         refreshProfile?.();
     }, [module, wasEmpty, notify, refreshProfile]);
 
-    return { ctx, profile, saved, allResults, loadingSaved, reportRun };
+    /**
+     * Delete the persisted saved analysis for this module ("Clear" action).
+     * Only clears server-side + this hook's `saved` state — the calling page
+     * still owns its own `result`/`lastRun` local state and must reset that
+     * itself after this resolves.
+     */
+    const clearAnalysis = useCallback(async () => {
+        await apiDeleteAnalysis(module);
+        setSaved(null);
+        setWasEmpty(true);
+        refreshProfile?.();
+    }, [module, refreshProfile]);
+
+    /** Push a result into the Knowledge Base as a searchable document ("Store" action). */
+    const storeToKnowledgeBase = useCallback(async (result, sourceName) => {
+        const label = MODULE_LABEL[module] || module;
+        const text = formatResultAsText(label, result);
+        const name = sourceName || `${label} — ${new Date().toLocaleDateString()}`;
+        const res = await apiUploadDocument(text, name);
+        notify?.(`Stored "${res.source_name}" in Knowledge Base`);
+        return res;
+    }, [module, notify]);
+
+    return { ctx, profile, saved, allResults, loadingSaved, reportRun, clearAnalysis, storeToKnowledgeBase };
 }

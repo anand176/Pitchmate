@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { apiDashboardTraction } from "../pitchmateApi";
 import { AwardIcon } from "../icons";
 import { useAnalysisModule, relativeTime } from "../useAnalysisModule";
+import { ResultActions } from "../motion";
 
 export default function TractionPage() {
-    const { profile, saved, loadingSaved, reportRun } = useAnalysisModule("traction");
+    const { profile, saved, loadingSaved, reportRun, clearAnalysis, storeToKnowledgeBase } = useAnalysisModule("traction");
     const [form, setForm] = useState({ metrics: "", customer_quotes: "", milestones: "", stage: "" });
     const [result, setResult] = useState(null);
     const [lastRun, setLastRun] = useState(null);
@@ -22,6 +23,12 @@ export default function TractionPage() {
 
     const update = (k, v) => setForm((f) => ({ ...f, [k]: v }));
     const canSubmit = form.metrics.trim();
+
+    const handleClear = async () => {
+        await clearAnalysis();
+        setResult(null);
+        setLastRun(null);
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -121,6 +128,7 @@ export default function TractionPage() {
                                     <div>{result.metrics_to_track.map((m, i) => <span key={i} className="dash-tag">{m}</span>)}</div>
                                 </>
                             )}
+                            <ResultActions onClear={handleClear} onStore={() => storeToKnowledgeBase(result)} />
                         </div>
                     )}
                 </div>

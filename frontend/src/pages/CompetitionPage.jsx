@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { apiDashboardCompetition } from "../pitchmateApi";
 import { UsersIcon } from "../icons";
 import { useAnalysisModule, relativeTime } from "../useAnalysisModule";
-import { ResultCard, Section, MotionButton } from "../motion";
+import { ResultCard, Section, MotionButton, ResultActions } from "../motion";
 
 export default function CompetitionPage() {
-    const { profile, saved, loadingSaved, reportRun } = useAnalysisModule("competition");
+    const { profile, saved, loadingSaved, reportRun, clearAnalysis, storeToKnowledgeBase } = useAnalysisModule("competition");
     const [competitorsText, setCompetitorsText] = useState("");
     const [description, setDescription] = useState("");
     const [result, setResult] = useState(null);
@@ -25,6 +25,12 @@ export default function CompetitionPage() {
 
     const competitors = competitorsText.split(",").map((c) => c.trim()).filter(Boolean);
     const canSubmit = competitors.length > 0;
+
+    const handleClear = async () => {
+        await clearAnalysis();
+        setResult(null);
+        setLastRun(null);
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -117,6 +123,7 @@ export default function CompetitionPage() {
                                     <Section className="dash-list">{result.recommendations.map((s, i) => <div key={i} className="dash-list-item"><span className="bullet">•</span>{s}</div>)}</Section>
                                 </>
                             )}
+                            <ResultActions onClear={handleClear} onStore={() => storeToKnowledgeBase(result)} />
                         </ResultCard>
                     )}
                 </div>

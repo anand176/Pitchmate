@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { apiDashboardDebrief, apiCreateInvestor } from "../pitchmateApi";
 import { RadarIcon, CopyIcon, CheckCircleIcon, FunnelIcon } from "../icons";
 import { useAnalysisModule, relativeTime } from "../useAnalysisModule";
+import { ResultActions } from "../motion";
 
 const INVESTOR_TYPES = ["Angel", "Seed VC", "Series A VC", "Family office", "Corporate VC", "Accelerator"];
 
@@ -16,7 +17,7 @@ const SIGNAL_LABEL = {
 const SIGNAL_TO_WARMTH = { warm: "hot", lukewarm: "warm", dead: "cold" };
 
 export default function MeetingDebriefPage() {
-    const { profile, saved, loadingSaved, reportRun } = useAnalysisModule("debrief");
+    const { profile, saved, loadingSaved, reportRun, clearAnalysis, storeToKnowledgeBase } = useAnalysisModule("debrief");
     const [form, setForm] = useState({
         investor_name: "", investor_type: "Seed VC", meeting_notes: "", ask: "",
     });
@@ -40,6 +41,12 @@ export default function MeetingDebriefPage() {
 
     const update = (k, v) => setForm((f) => ({ ...f, [k]: v }));
     const canSubmit = form.investor_name.trim() && form.meeting_notes.trim();
+
+    const handleClear = async () => {
+        await clearAnalysis();
+        setResult(null);
+        setLastRun(null);
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -191,6 +198,7 @@ export default function MeetingDebriefPage() {
                                     </button>
                                 </>
                             )}
+                            <ResultActions onClear={handleClear} onStore={() => storeToKnowledgeBase(result)} />
                         </div>
                     )}
                 </div>

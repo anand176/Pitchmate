@@ -129,7 +129,7 @@ export async function apiDownloadArtifact(filename, downloadAs = null) {
 // ─── Knowledge Base ───────────────────────────────────────────────────────────
 
 /**
- * Upload a text document to the Supabase pgvector knowledge base.
+ * Upload a text document to the Pinecone-backed knowledge base.
  * @param {string} text - Full text content to embed and store
  * @param {string} sourceName - Label / filename for this document
  * @returns {{ status: string, chunks_stored: number, source_name: string }}
@@ -351,6 +351,19 @@ export async function apiGetAnalyses() {
     const res = await fetch(`${BACKEND}/dashboard/results`, { method: "GET", headers });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data?.detail || `Results fetch failed (${res.status})`);
+    return data;
+}
+
+/**
+ * Delete the current user's saved result for one dashboard module (the "Clear" action).
+ * @param {string} module - e.g. "market", "gtm", "competition", "traction", "finance",
+ *                           "valuation", "investors", "deck", "debrief"
+ */
+export async function apiDeleteAnalysis(module) {
+    const headers = await authHeaders();
+    const res = await fetch(`${BACKEND}/dashboard/results/${module}`, { method: "DELETE", headers });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data?.detail || `Delete failed (${res.status})`);
     return data;
 }
 
