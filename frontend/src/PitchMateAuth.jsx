@@ -67,10 +67,12 @@ export default function PitchMateAuth({ onAuthenticated }) {
                     </p>
                     <div className="auth-grid">
                         {[
-                            "Market size validation",
+                            "Market & GTM validation",
+                            "Traction framing",
+                            "Financial narrative & runway",
                             "Deck & narrative coaching",
-                            "Investor targeting",
-                            "Diligence Q&A prep",
+                            "Investor targeting & outreach",
+                            "Meeting debrief",
                         ].map((item) => (
                             <div className="auth-grid-item" key={item}>
                                 <span className="auth-grid-dot"><CheckCircleIcon size={14} strokeWidth={2.2} /></span>
@@ -78,10 +80,6 @@ export default function PitchMateAuth({ onAuthenticated }) {
                             </div>
                         ))}
                     </div>
-                    <blockquote>
-                        <p>“Got funded in 3 months after using Pitchmate.”</p>
-                        <cite>Arjun R. · SaaS Founder, Series A</cite>
-                    </blockquote>
                 </section>
 
                 <section className="auth-card" aria-label={isSignup ? "Create account" : "Sign in"}>
@@ -366,25 +364,6 @@ const CSS = `
     justify-content:center;
     flex-shrink:0;
   }
-  .auth-hero blockquote {
-    margin:0;
-    padding:18px 20px;
-    border-left:3px solid var(--accent-2);
-    background:var(--accent-2-soft);
-    border-radius:0 var(--radius-sm) var(--radius-sm) 0;
-  }
-  .auth-hero blockquote p {
-    margin:0 0 8px;
-    font-size:15px;
-    line-height:1.5;
-    color:var(--fg);
-  }
-  .auth-hero cite {
-    font-style:normal;
-    font-size:12px;
-    color:var(--text-muted);
-    font-family:var(--font-mono);
-  }
 
   .auth-card {
     background:var(--card);
@@ -566,6 +545,5 @@ const CSS = `
 
   @media (max-width: 860px) {
     .auth-layout { grid-template-columns:1fr; gap:32px; padding:28px 16px 48px; }
-    .auth-hero blockquote { display:none; }
   }
 `;
