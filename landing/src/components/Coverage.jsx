@@ -1,9 +1,11 @@
 import { motion } from "framer-motion";
 import { CheckIcon } from "../icons";
 import { SectionHeading } from "./Features";
+import AnimatedCounter from "./AnimatedCounter";
+import { EASE } from "../motion";
 
 const STATS = [
-    { value: "09", label: "SPECIALIST AGENTS" },
+    { label: "SPECIALIST AGENTS", counter: 9, pad: 2 },
     { value: "PDF/DOCX", label: "DECK EXPORT" },
     { value: "E2E", label: "IDEA -> TERM SHEET" },
 ];
@@ -35,7 +37,7 @@ export default function Coverage() {
                     initial={{ opacity: 0, y: 16 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, margin: "-40px" }}
-                    transition={{ duration: 0.5 }}
+                    transition={{ duration: 0.6, ease: EASE }}
                     className="cyber-card cyber-chamfer"
                     style={{
                         marginTop: 48,
@@ -54,10 +56,10 @@ export default function Coverage() {
                             }}
                         >
                             <div
-                                className="neon-text"
-                                style={{ fontFamily: "var(--font-heading)", fontSize: 28, fontWeight: 800 }}
+                                className="stat-number"
+                                style={{ fontFamily: "var(--font-heading)", fontSize: 28 }}
                             >
-                                {s.value}
+                                {s.counter !== undefined ? <AnimatedCounter to={s.counter} pad={s.pad} /> : s.value}
                             </div>
                             <div
                                 style={{
@@ -77,7 +79,7 @@ export default function Coverage() {
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, margin: "-60px" }}
-                    transition={{ duration: 0.6 }}
+                    transition={{ duration: 0.7, ease: EASE, delay: 0.1 }}
                     className="cyber-card cyber-chamfer"
                     style={{ marginTop: 20 }}
                 >

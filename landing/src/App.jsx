@@ -1,3 +1,5 @@
+import { motion, useReducedMotion } from "framer-motion";
+import Splash from "./components/Splash";
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
 import Features from "./components/Features";
@@ -7,12 +9,21 @@ import CTASection from "./components/CTASection";
 import Footer from "./components/Footer";
 
 export default function App() {
+    const reduceMotion = useReducedMotion();
+
     return (
         <>
+            <Splash />
             <div className="bg-ambience" aria-hidden="true">
-                <div className="mesh mesh--accent" />
-                <div className="mesh mesh--secondary" />
-                <div className="mesh mesh--tertiary" />
+                <motion.div
+                    className="mesh mesh--accent"
+                    animate={
+                        reduceMotion
+                            ? undefined
+                            : { x: [0, 40, 0], y: [0, 30, 0], scale: [1, 1.08, 1] }
+                    }
+                    transition={{ duration: 26, repeat: Infinity, ease: "easeInOut" }}
+                />
             </div>
             <Navbar />
             <main>

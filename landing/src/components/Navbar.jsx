@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { MenuIcon, CloseIcon, SparkleIcon } from "../icons";
+import { MenuIcon, CloseIcon, SparkleIcon, ArrowRightIcon } from "../icons";
+import Button from "./Button";
 
 const LINKS = [
     { href: "#features", label: "FEATURES" },
@@ -45,9 +46,12 @@ export default function Navbar() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
+                    background: scrolled ? "rgba(18, 18, 26, 0.72)" : "var(--card)",
+                    backdropFilter: scrolled ? "blur(14px)" : "none",
+                    WebkitBackdropFilter: scrolled ? "blur(14px)" : "none",
                     borderColor: scrolled ? "var(--accent)" : "var(--border)",
                     boxShadow: scrolled ? "var(--shadow-neon-sm)" : "none",
-                    transition: "border-color 300ms ease, box-shadow 300ms ease",
+                    transition: "background 300ms ease, border-color 300ms ease, box-shadow 300ms ease, backdrop-filter 300ms ease",
                 }}
             >
                 <a
@@ -95,9 +99,9 @@ export default function Navbar() {
                 </div>
 
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <a href="#cta" className="btn btn-primary btn-sm cyber-chamfer-sm nav-cta-desktop">
+                    <Button href="#cta" variant="primary" size="sm" icon={ArrowRightIcon} className="nav-cta-desktop">
                         GET ACCESS
-                    </a>
+                    </Button>
                     <button
                         aria-label={menuOpen ? "Close menu" : "Open menu"}
                         aria-expanded={menuOpen}
@@ -148,13 +152,9 @@ export default function Navbar() {
                             {link.label}
                         </a>
                     ))}
-                    <a
-                        href="#cta"
-                        className="btn btn-primary cyber-chamfer-sm"
-                        onClick={() => setMenuOpen(false)}
-                    >
+                    <Button href="#cta" variant="primary" icon={ArrowRightIcon} onClick={() => setMenuOpen(false)}>
                         GET ACCESS
-                    </a>
+                    </Button>
                 </motion.div>
             )}
 

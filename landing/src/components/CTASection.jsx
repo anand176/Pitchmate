@@ -1,5 +1,8 @@
 import { motion } from "framer-motion";
 import { ArrowRightIcon } from "../icons";
+import { EASE } from "../motion";
+import RevealText from "./RevealText";
+import Button from "./Button";
 
 export default function CTASection() {
     return (
@@ -9,7 +12,7 @@ export default function CTASection() {
                     initial={{ opacity: 0, y: 24 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, margin: "-60px" }}
-                    transition={{ duration: 0.6 }}
+                    transition={{ duration: 0.7, ease: EASE }}
                     className="cyber-card cyber-chamfer"
                     style={{
                         position: "relative",
@@ -36,6 +39,7 @@ export default function CTASection() {
                             ACCESS_TERMINAL
                         </span>
                         <h2
+                            aria-label="Ready to build your fundraise?"
                             style={{
                                 fontSize: "clamp(1.7rem, 4vw, 2.5rem)",
                                 fontWeight: 900,
@@ -43,11 +47,10 @@ export default function CTASection() {
                                 margin: "18px auto 16px",
                                 maxWidth: 580,
                                 letterSpacing: "0.01em",
+                                color: "var(--foreground)",
                             }}
                         >
-                            <span className="cyber-glitch neon-text" data-text="READY TO BUILD YOUR FUNDRAISE?">
-                                READY TO BUILD YOUR FUNDRAISE?
-                            </span>
+                            <RevealText text="READY TO BUILD YOUR FUNDRAISE?" />
                         </h2>
                         <p
                             style={{
@@ -61,10 +64,9 @@ export default function CTASection() {
                         >
                             Start free, bring your startup idea, and let the agents do the heavy lifting.
                         </p>
-                        <a href="#top" className="btn btn-primary cyber-chamfer-sm">
+                        <Button href="#top" variant="primary" icon={ArrowRightIcon}>
                             INITIATE ACCESS
-                            <ArrowRightIcon width={16} height={16} />
-                        </a>
+                        </Button>
                     </div>
                 </motion.div>
             </div>

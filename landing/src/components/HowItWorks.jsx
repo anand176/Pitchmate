@@ -1,21 +1,24 @@
 import { motion } from "framer-motion";
 import { SectionHeading } from "./Features";
+import AnimatedCounter from "./AnimatedCounter";
+import { EASE, springHover } from "../motion";
+import { handleCursorGlow } from "../cursorGlow";
 
 const STEPS = [
     {
-        step: "01",
+        step: 1,
         title: "UPLINK YOUR STARTUP",
         description:
             "A short onboarding — stage, industry, what you're building. That context feeds every agent from here on.",
     },
     {
-        step: "02",
+        step: 2,
         title: "QUERY ANY AGENT",
         description:
             "Market sizing, traction framing, valuation, investor targeting, due diligence prep — one conversation, routed automatically.",
     },
     {
-        step: "03",
+        step: 3,
         title: "DEPLOY & EXECUTE",
         description:
             "Download an investor-ready deck, sync your pipeline, and rehearse the call before you're in the room.",
@@ -47,10 +50,13 @@ export default function HowItWorks() {
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true, margin: "-60px" }}
-                            transition={{ duration: 0.5, delay: i * 0.1, ease: "easeOut" }}
-                            className="cyber-card cyber-card--hover cyber-chamfer"
+                            transition={{ duration: 0.7, delay: i * 0.1, ease: EASE }}
+                            whileHover={{ y: -6, borderColor: "var(--accent)", transition: springHover }}
+                            onMouseMove={handleCursorGlow}
+                            className="cyber-card cyber-chamfer feature-card"
                             style={{ padding: 32, position: "relative" }}
                         >
+                            <div className="cursor-glow" aria-hidden="true" />
                             <span
                                 aria-hidden="true"
                                 style={{
@@ -61,15 +67,16 @@ export default function HowItWorks() {
                                     fontSize: 11,
                                     color: "var(--muted-foreground)",
                                     letterSpacing: "0.1em",
+                                    zIndex: 1,
                                 }}
                             >
                                 [{i + 1}/3]
                             </span>
                             <span
-                                className="neon-text"
-                                style={{ fontFamily: "var(--font-heading)", fontSize: 36, fontWeight: 800 }}
+                                className="stat-number"
+                                style={{ fontFamily: "var(--font-heading)", fontSize: 36, position: "relative", zIndex: 1 }}
                             >
-                                {s.step}
+                                <AnimatedCounter to={s.step} pad={2} />
                             </span>
                             <h3
                                 style={{
@@ -78,11 +85,22 @@ export default function HowItWorks() {
                                     fontWeight: 700,
                                     letterSpacing: "0.04em",
                                     margin: "18px 0 10px",
+                                    position: "relative",
+                                    zIndex: 1,
                                 }}
                             >
                                 {s.title}
                             </h3>
-                            <p style={{ fontSize: 13.5, color: "var(--muted-foreground)", margin: 0, lineHeight: 1.75 }}>
+                            <p
+                                style={{
+                                    fontSize: 13.5,
+                                    color: "var(--muted-foreground)",
+                                    margin: 0,
+                                    lineHeight: 1.75,
+                                    position: "relative",
+                                    zIndex: 1,
+                                }}
+                            >
                                 {s.description}
                             </p>
                         </motion.div>

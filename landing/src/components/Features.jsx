@@ -1,5 +1,7 @@
 import { motion } from "framer-motion";
 import { TargetIcon, FileIcon, UsersIcon, ShieldIcon, MicIcon, DatabaseIcon } from "../icons";
+import { EASE, springHover } from "../motion";
+import { handleCursorGlow } from "../cursorGlow";
 
 const FEATURES = [
     {
@@ -41,11 +43,11 @@ const FEATURES = [
 ];
 
 const cardVariants = {
-    hidden: { opacity: 0, y: 20 },
+    hidden: { opacity: 0, y: 24 },
     show: (i) => ({
         opacity: 1,
         y: 0,
-        transition: { duration: 0.5, delay: i * 0.08, ease: "easeOut" },
+        transition: { duration: 0.7, delay: (i % 3) * 0.1 + Math.floor(i / 3) * 0.06, ease: EASE },
     }),
 };
 
@@ -72,19 +74,22 @@ export default function Features() {
                         return (
                             <motion.div
                                 key={title}
-                                className="cyber-card cyber-card--hover cyber-chamfer"
+                                className="cyber-card cyber-chamfer feature-card"
                                 variants={cardVariants}
                                 custom={i}
                                 initial="hidden"
                                 whileInView="show"
                                 viewport={{ once: true, margin: "-60px" }}
+                                whileHover={{ y: -6, borderColor: `var(${accentVar})`, transition: springHover }}
+                                onMouseMove={handleCursorGlow}
                             >
-                                <div className="cyber-terminal-header">
+                                <div className="cursor-glow" aria-hidden="true" />
+                                <div className="cyber-terminal-header" style={{ position: "relative", zIndex: 1 }}>
                                     <span className="cyber-terminal-dot" style={{ background: "var(--destructive)" }} />
                                     <span className="cyber-terminal-dot" style={{ background: "#ffb800" }} />
                                     <span className="cyber-terminal-dot" style={{ background: "var(--accent)" }} />
                                 </div>
-                                <div style={{ padding: 26 }}>
+                                <div style={{ padding: 26, position: "relative", zIndex: 1 }}>
                                     <span
                                         className="cyber-chamfer-sm"
                                         style={{

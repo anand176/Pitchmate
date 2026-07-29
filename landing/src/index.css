@@ -120,29 +120,13 @@ h4 {
     max-height: 820px;
     border-radius: 50%;
     filter: blur(90px);
-    opacity: 0.28;
+    opacity: 0.16;
 }
 
 .bg-ambience .mesh--accent {
     top: -18%;
     left: -12%;
     background: var(--accent);
-}
-
-.bg-ambience .mesh--secondary {
-    bottom: -22%;
-    right: -14%;
-    background: var(--accent-secondary);
-    opacity: 0.18;
-}
-
-.bg-ambience .mesh--tertiary {
-    top: 30%;
-    right: 10%;
-    width: 30vw;
-    height: 30vw;
-    background: var(--accent-tertiary);
-    opacity: 0.14;
 }
 
 /* ─── Chamfered corners (clip-path) ──────────────────────────────────── */
@@ -244,6 +228,46 @@ h4 {
 .neon-text--tertiary {
     color: var(--accent-tertiary);
     text-shadow: 0 0 8px rgba(0, 212, 255, 0.6), 0 0 20px rgba(0, 212, 255, 0.3);
+}
+
+/* Flat white numerals with a thin accent hairline underneath — no glow. */
+.stat-number {
+    position: relative;
+    display: inline-block;
+    color: var(--foreground);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+.stat-number::after {
+    content: "";
+    position: absolute;
+    left: 1px;
+    right: 1px;
+    bottom: -8px;
+    height: 2px;
+    background: var(--accent);
+    box-shadow: 0 0 6px rgba(0, 255, 136, 0.6);
+}
+
+/* Cursor-follow highlight on hoverable cards. Background is set via JS
+   directly on this element (no React re-render) for a smooth 60fps follow. */
+.feature-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.feature-card .cursor-glow {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 300ms ease;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.feature-card:hover .cursor-glow {
+    opacity: 1;
 }
 
 /* Chromatic aberration headline */
@@ -396,6 +420,180 @@ h4 {
     }
 }
 
+/* ─── Magnetic CTA button ─────────────────────────────────────────────
+   A chamfered fill sweeps to swallow the icon badge on hover; the badge
+   steps back to meet it. Pure CSS — cheap enough not to need JS. */
+
+.btn-magnetic {
+    --icon-size: 44px;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    min-height: 50px;
+    overflow: hidden;
+    padding: 6px;
+    gap: 12px;
+    border: 1px solid var(--border);
+    background: transparent;
+    cursor: pointer;
+    clip-path: polygon(
+        0 14px,
+        14px 0,
+        calc(100% - 14px) 0,
+        100% 14px,
+        100% calc(100% - 14px),
+        calc(100% - 14px) 100%,
+        14px 100%,
+        0 calc(100% - 14px)
+    );
+    transition: border-color 300ms ease;
+}
+
+.btn-magnetic:hover {
+    border-color: var(--accent);
+}
+
+.btn-magnetic:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 3px;
+}
+
+.btn-magnetic:active {
+    transform: scale(0.97);
+}
+
+.btn-magnetic-sm {
+    --icon-size: 34px;
+    min-height: 42px;
+}
+
+.btn-magnetic-fill {
+    position: absolute;
+    z-index: 0;
+    top: 4px;
+    bottom: 4px;
+    left: 6px;
+    width: calc(100% - 6px - 6px - var(--icon-size) - 12px);
+    background: var(--accent);
+    clip-path: polygon(0 8px, 8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px));
+    transition: width 400ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.btn-magnetic:hover .btn-magnetic-fill {
+    width: calc(100% - 12px);
+}
+
+.btn-magnetic-text {
+    position: relative;
+    z-index: 1;
+    color: var(--background);
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 13.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 0 16px 0 20px;
+    white-space: nowrap;
+}
+
+.btn-magnetic-sm .btn-magnetic-text {
+    font-size: 12px;
+    padding: 0 12px 0 16px;
+}
+
+.btn-magnetic-circle {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--icon-size);
+    height: var(--icon-size);
+    flex-shrink: 0;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--accent);
+    clip-path: polygon(0 6px, 6px 0, calc(100% - 6px) 0, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 0 calc(100% - 6px));
+    transition: transform 400ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.btn-magnetic:hover .btn-magnetic-circle {
+    transform: translateX(-8px);
+}
+
+/* ─── Boot splash ──────────────────────────────────────────────────── */
+
+.splash {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 300;
+    pointer-events: none;
+    overflow: hidden;
+    animation: splashHide 0.3s ease forwards;
+    animation-delay: 1.15s;
+}
+
+.splash-row {
+    display: flex;
+    width: 100%;
+    height: 50%;
+}
+
+.splash-box {
+    position: relative;
+    width: 20%;
+    height: 100%;
+    background: var(--background);
+    border-right: 1px solid rgba(0, 255, 136, 0.15);
+}
+
+.splash-box::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 255, 136, 0.06) 2px,
+        rgba(0, 255, 136, 0.06) 4px
+    );
+}
+
+.splash-row-top .splash-box {
+    animation: splashTop 0.85s cubic-bezier(0.87, 0, 0.13, 1) forwards;
+}
+
+.splash-row-bottom .splash-box {
+    animation: splashBottom 0.85s cubic-bezier(0.87, 0, 0.13, 1) forwards;
+}
+
+@keyframes splashTop {
+    from {
+        transform: translateY(0%);
+    }
+    to {
+        transform: translateY(-100%);
+    }
+}
+
+@keyframes splashBottom {
+    from {
+        transform: translateY(0%);
+    }
+    to {
+        transform: translateY(100%);
+    }
+}
+
+@keyframes splashHide {
+    to {
+        opacity: 0;
+        visibility: hidden;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -404,5 +602,13 @@ h4 {
         animation-iteration-count: 1 !important;
         transition-duration: 0.001ms !important;
         scroll-behavior: auto !important;
+    }
+
+    .splash {
+        animation: splashHide 0.01s linear forwards;
+    }
+
+    .splash-box {
+        animation: none !important;
     }
 }
