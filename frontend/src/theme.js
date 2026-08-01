@@ -1500,10 +1500,6 @@ export const DASHBOARD_STYLES = `
     border-radius:var(--radius);
     align-items:flex-end;
   }
-  .chat-input-wrap:focus-within {
-    border-color:var(--accent);
-    box-shadow:0 0 0 3px var(--accent-soft);
-  }
   .chat-input-wrap textarea {
     flex:1;
     min-height:24px;
