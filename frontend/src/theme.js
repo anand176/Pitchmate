@@ -1236,6 +1236,9 @@ export const DASHBOARD_STYLES = `
   .chat-agent-picker {
     position:relative;
   }
+  .chat-input-area .chat-agent-picker {
+    margin-bottom:8px;
+  }
   .chat-agent-btn {
     display:flex;
     align-items:center;
@@ -1263,7 +1266,7 @@ export const DASHBOARD_STYLES = `
   }
   .chat-agent-menu {
     position:absolute;
-    top:calc(100% + 6px);
+    bottom:calc(100% + 6px);
     left:0;
     width:260px;
     max-height:320px;
@@ -1513,6 +1516,10 @@ export const DASHBOARD_STYLES = `
     font-size:14px;
     line-height:1.5;
     resize:none;
+  }
+  .chat-input-wrap textarea:focus-visible {
+    outline:none;
+    box-shadow:none;
   }
   .chat-input-wrap textarea::placeholder { color:var(--text-muted); }
   .chat-send-btn {
@@ -2076,6 +2083,13 @@ export function formatMessage(text) {
         .replace(/^[-*]\s(.+)$/gm, '<div style="display:flex;gap:8px;margin:4px 0;"><span style="color:#1D4ED8;flex-shrink:0;">•</span><span>$1</span></div>')
         .replace(/\[(HOOK|PROBLEM|SOLUTION|TRACTION|ASK)\]/g,
             '<span style="display:inline-block;padding:2px 9px;background:rgba(37,99,235,0.10);border:1px solid rgba(37,99,235,0.25);border-radius:999px;color:#1D4ED8;font-family:Inter,system-ui,sans-serif;font-size:10.5px;font-weight:600;margin:0 2px;">$1</span>');
+    // Markdown links [label](url) — must run before the bare-URL pass below,
+    // otherwise the URL inside the parens gets auto-linked on its own and the
+    // literal "[label](" / ")" characters are left behind as stray text.
+    out = out.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (_, label, url) => {
+        const safe = escapeHtmlUrl(url);
+        return `<a href="${safe}" target="_blank" rel="noopener noreferrer" class="chat-msg-link">${label}</a>`;
+    });
     out = out.replace(/https?:\/\/[^\s<>"')\]]+/g, (url) => {
         const safe = escapeHtmlUrl(url);
         const isDrawio = /diagrams\.net|draw\.io/i.test(url);

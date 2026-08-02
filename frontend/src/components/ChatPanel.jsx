@@ -186,43 +186,6 @@ export default function ChatPanel({ open, onClose, messages, setMessages, sessio
                     </div>
                     <h3>Ask Pitchmate</h3>
 
-                    <div className="chat-agent-picker" ref={agentMenuRef}>
-                        <button
-                            type="button"
-                            className="chat-agent-btn"
-                            onClick={() => setAgentMenuOpen((v) => !v)}
-                            title="Choose which agent to talk to"
-                            aria-expanded={agentMenuOpen}
-                        >
-                            {activeAgent?.name !== ROOT_AGENT && <SparklesIcon size={12} />}
-                            <span>{activeAgent?.label || "Auto (root agent)"}</span>
-                            <ChevronDownIcon size={13} />
-                        </button>
-                        <AnimatePresence>
-                            {agentMenuOpen && (
-                                <motion.div
-                                    className="chat-agent-menu"
-                                    initial={{ opacity: 0, y: -4 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -4 }}
-                                    transition={{ duration: 0.14 }}
-                                >
-                                    {agents.map((a) => (
-                                        <button
-                                            type="button"
-                                            key={a.name}
-                                            className={`chat-agent-option ${a.name === agentName ? "active" : ""}`}
-                                            onClick={() => selectAgent(a)}
-                                        >
-                                            <span className="chat-agent-option-label">{a.label}</span>
-                                            {a.description && <span className="chat-agent-option-desc">{a.description}</span>}
-                                        </button>
-                                    ))}
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
-
                     {sessionId && (
                         <span className="dash-tag" style={{ marginLeft: 6 }}>session active</span>
                     )}
@@ -284,6 +247,7 @@ export default function ChatPanel({ open, onClose, messages, setMessages, sessio
                         {messages.map((msg, i) => {
                             let downloadMatches = [];
                             let drawingUrl = null;
+                            let bubbleContent = msg.content;
                             if (msg.role === "assistant" && typeof msg.content === "string") {
                                 const fromLabel = [...(msg.content.matchAll(/Download:\s*([^\s]+\.(?:pdf|txt|docx))/gi) || [])].map(m => m[1]);
                                 const fromFilename = [...(msg.content.matchAll(/(deck_[^\s]+\.(?:pdf|docx)|executive_summary_[^\s]+\.pdf|due_diligence_qa_[^\s]+\.pdf|elevator_pitch_[^\s]+\.txt)/gi) || [])].map(m => m[1]);
@@ -294,7 +258,18 @@ export default function ChatPanel({ open, onClose, messages, setMessages, sessio
                                     return true;
                                 });
                                 const urlMatch = msg.content.match(/https?:\/\/[^\s<>"')\]]+/);
-                                if (urlMatch && /diagrams\.net|draw\.io/i.test(urlMatch[0])) drawingUrl = urlMatch[0];
+                                if (urlMatch && /diagrams\.net|draw\.io/i.test(urlMatch[0])) {
+                                    drawingUrl = urlMatch[0];
+                                    // The "View drawing" pill button below already surfaces this
+                                    // link — strip the raw markdown link line from the bubble so
+                                    // it isn't shown a second time (garbled, since formatMessage
+                                    // doesn't parse markdown [label](url) syntax).
+                                    bubbleContent = bubbleContent
+                                        .replace(/\[[^\]]*\]\(\s*https?:\/\/[^\s)]+\s*\)/g, "")
+                                        .replace(drawingUrl, "")
+                                        .replace(/\n{3,}/g, "\n\n")
+                                        .trim();
+                                }
                             }
                             const isNew = i >= firstNewIdx;
                             const staggerDelay = isNew ? Math.min(i - firstNewIdx, 4) * 0.04 : 0;
@@ -317,7 +292,7 @@ export default function ChatPanel({ open, onClose, messages, setMessages, sessio
                                     <div className="chat-bubble-wrap">
                                         <div
                                             className={`chat-bubble ${msg.role === "assistant" ? "ai" : "user"} ${msg.isError ? "err" : ""} ${msg.isSystem ? "system" : ""}`}
-                                            dangerouslySetInnerHTML={{ __html: msg.role === "assistant" ? formatMessage(msg.content) : msg.content }}
+                                            dangerouslySetInnerHTML={{ __html: msg.role === "assistant" ? formatMessage(bubbleContent) : msg.content }}
                                         />
                                         {downloadMatches.length > 0 && (
                                             <div className="chat-download-row">
@@ -402,6 +377,43 @@ export default function ChatPanel({ open, onClose, messages, setMessages, sessio
                 </div>
 
                 <div className="chat-input-area">
+                    <div className="chat-agent-picker" ref={agentMenuRef}>
+                        <button
+                            type="button"
+                            className="chat-agent-btn"
+                            onClick={() => setAgentMenuOpen((v) => !v)}
+                            title="Choose which agent to talk to"
+                            aria-expanded={agentMenuOpen}
+                        >
+                            {activeAgent?.name !== ROOT_AGENT && <SparklesIcon size={12} />}
+                            <span>{activeAgent?.label || "Auto (root agent)"}</span>
+                            <ChevronDownIcon size={13} />
+                        </button>
+                        <AnimatePresence>
+                            {agentMenuOpen && (
+                                <motion.div
+                                    className="chat-agent-menu"
+                                    initial={{ opacity: 0, y: 4 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: 4 }}
+                                    transition={{ duration: 0.14 }}
+                                >
+                                    {agents.map((a) => (
+                                        <button
+                                            type="button"
+                                            key={a.name}
+                                            className={`chat-agent-option ${a.name === agentName ? "active" : ""}`}
+                                            onClick={() => selectAgent(a)}
+                                        >
+                                            <span className="chat-agent-option-label">{a.label}</span>
+                                            {a.description && <span className="chat-agent-option-desc">{a.description}</span>}
+                                        </button>
+                                    ))}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+
                     <div className="chat-input-wrap">
                         <textarea
                             ref={textareaRef}
