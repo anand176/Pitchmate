@@ -1189,6 +1189,17 @@ img {
 }
 
 @media (max-width: 720px) {
+  /* On a narrow phone, a width-driven 16:9 box is too short — the Drive
+     player's own header/controls chrome eats most of it, leaving the
+     actual video tiny and letterboxed. Switch to a height-driven box so
+     the video gets real room regardless of screen width. */
+  .demo-video {
+    aspect-ratio: auto;
+    height: min(58svh, 420px);
+  }
+}
+
+@media (max-width: 720px) {
   .header {
     max-width: 100%;
     justify-content: space-between;
