@@ -62,7 +62,7 @@ img {
   position: absolute;
   inset: 0;
   height: 100vh;
-  height: 100dvh;
+  height: 100svh;
   background: #000;
   overflow: hidden;
   z-index: 0;
@@ -152,7 +152,7 @@ img {
   align-items: center;
   justify-content: center;
   height: 100vh;
-  height: 100dvh;
+  height: 100svh;
   overflow: hidden;
   padding: clamp(16px, 2.4vh, 28px) clamp(14px, 3vw, 32px);
 }
@@ -333,7 +333,8 @@ img {
   letter-spacing: -0.04em;
   white-space: nowrap;
   overflow: hidden;
-  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.55), 0 1px 4px rgba(0, 0, 0, 0.85);
+  text-shadow: 0 0 1px rgba(0, 0, 0, 0.9), 0 1px 2px rgba(0, 0, 0, 0.9),
+    0 2px 6px rgba(0, 0, 0, 0.75), 0 4px 28px rgba(0, 0, 0, 0.6);
 }
 
 .headline .line {
@@ -902,6 +903,7 @@ img {
   position: relative;
   width: min(940px, 100%);
   max-height: 90vh;
+  max-height: 90svh;
   overflow: auto;
   background: #121213;
   border: 1px solid rgba(255, 255, 255, 0.14);
@@ -1206,7 +1208,7 @@ img {
   }
 
   .hero {
-    padding-top: clamp(40px, 9vh, 100px);
+    padding-top: clamp(64px, 16vh, 160px);
   }
 
   .headline {
