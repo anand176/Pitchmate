@@ -1216,6 +1216,14 @@ img {
     line-height: 1.05;
   }
 
+  .section {
+    padding: clamp(36px, 8vw, 56px) clamp(16px, 4vw, 32px);
+  }
+
+  .grid {
+    margin-top: clamp(24px, 6vw, 36px);
+  }
+
   .stats {
     grid-template-columns: repeat(2, 1fr);
     gap: clamp(14px, 3vw, 22px);
