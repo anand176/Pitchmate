@@ -1200,6 +1200,13 @@ img {
 }
 
 @media (max-width: 720px) {
+  .bg-video {
+    /* A narrow portrait crop shows a much thinner vertical slice of the
+       same footage than desktop's wide crop — needs its own offset to
+       keep the dark band under the headline. Tune this value to taste. */
+    object-position: center 78%;
+  }
+
   .header {
     max-width: 100%;
     justify-content: space-between;
