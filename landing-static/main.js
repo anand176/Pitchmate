@@ -217,6 +217,25 @@
     btn.addEventListener("click", closeDemo);
   });
 
+  // Backgrounding the tab (app switcher, home button, switching tabs) while
+  // the demo is open leaves the Drive iframe's video "playing" as far as the
+  // OS is concerned, which is what surfaces Android's media-control card in
+  // the recent-apps view. Stop it (without closing the modal) the moment the
+  // page goes hidden, and reload it when the tab comes back to front.
+  document.addEventListener("visibilitychange", function () {
+    if (!modal || modal.hidden || !player) return;
+
+    if (document.hidden) {
+      if (typeof player.pause === "function") player.pause();
+      if (player.tagName === "IFRAME" && player.src) {
+        player.dataset.src = player.dataset.src || player.src;
+        player.removeAttribute("src");
+      }
+    } else if (player.tagName === "IFRAME" && !player.src && player.dataset.src) {
+      player.src = player.dataset.src;
+    }
+  });
+
   /* ------------------------------------------------------------ Escape ---- */
 
   document.addEventListener("keydown", function (e) {
