@@ -1205,7 +1205,7 @@ img {
        low enough that header + hero + stats still fit inside the
        single-viewport .page (overflow: hidden) without the stats row
        getting clipped and the next section appearing to overlap it. */
-    padding-top: clamp(32px, 9vh, 90px);
+    padding-top: clamp(40px, 12vh, 110px);
   }
 
   .headline {
