@@ -184,14 +184,9 @@
     modal.hidden = false;
     document.body.classList.add("demo-open");
 
-    // Lazy-load: the iframe (Google Drive embed) or <video> only gets a src
-    // once the modal is actually opened.
+    // Lazy-load: the YouTube iframe only gets a src once the modal opens.
     if (player && !player.src && player.dataset.src) {
       player.src = player.dataset.src;
-    }
-    if (player && typeof player.play === "function") {
-      var playing = player.play();
-      if (playing && typeof playing.catch === "function") playing.catch(function () {});
     }
 
     var closeBtn = modal.querySelector(".demo-close");
@@ -200,10 +195,9 @@
 
   function closeDemo() {
     if (!modal || modal.hidden) return;
-    if (player && typeof player.pause === "function") player.pause();
-    // Iframes (Drive embed) have no pause() — clearing src stops playback
-    // and drops the src attribute so the modal re-lazy-loads next time.
-    if (player && player.tagName === "IFRAME") player.removeAttribute("src");
+    // A YouTube iframe has no pause() we can call cross-origin — dropping
+    // the src stops playback and makes the modal re-lazy-load next time.
+    if (player) player.removeAttribute("src");
     modal.hidden = true;
     document.body.classList.remove("demo-open");
     if (lastFocused && lastFocused.focus) lastFocused.focus();
@@ -218,20 +212,19 @@
   });
 
   // Backgrounding the tab (app switcher, home button, switching tabs) while
-  // the demo is open leaves the Drive iframe's video "playing" as far as the
-  // OS is concerned, which is what surfaces Android's media-control card in
-  // the recent-apps view. Stop it (without closing the modal) the moment the
-  // page goes hidden, and reload it when the tab comes back to front.
+  // the demo is open leaves the YouTube iframe's video "playing" as far as
+  // the OS is concerned, which is what surfaces Android's media-control
+  // card in the recent-apps view. Stop it the moment the page goes hidden,
+  // and reload it when the tab comes back to front.
   document.addEventListener("visibilitychange", function () {
     if (!modal || modal.hidden || !player) return;
 
     if (document.hidden) {
-      if (typeof player.pause === "function") player.pause();
-      if (player.tagName === "IFRAME" && player.src) {
+      if (player.src) {
         player.dataset.src = player.dataset.src || player.src;
         player.removeAttribute("src");
       }
-    } else if (player.tagName === "IFRAME" && !player.src && player.dataset.src) {
+    } else if (!player.src && player.dataset.src) {
       player.src = player.dataset.src;
     }
   });
